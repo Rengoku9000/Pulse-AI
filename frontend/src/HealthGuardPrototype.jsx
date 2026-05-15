@@ -737,70 +737,184 @@ const App = () => {
               </div>
             )}
 
-            {/* CHAPTER 6: HEALTHCARE COMMAND CENTER */}
+            {/* CHAPTER 6: ICU INTELLIGENCE COMMAND CENTER */}
             {currentChapter === 6 && (
-              <div className="w-full max-w-6xl animate-fade-in space-y-6">
-                <div className="grid grid-cols-2 md:grid-cols-4 gap-5">
-                  <div className="p-5 rounded-xl bg-[#0A0B10] border border-[#1A1D24] flex flex-col justify-between shadow-sm">
-                    <span className="text-[10px] font-mono font-bold text-[#8A8F98] uppercase">Active Triage Cases</span>
-                    <span className="text-4xl font-bold text-white mt-3">{triageResponse ? 1 : 0} <span className="text-sm text-[#10B981] font-normal tracking-tight ml-1">{triageResponse ? "live case" : "pending"}</span></span>
-                  </div>
-                  <div className="p-5 rounded-xl bg-[#0A0B10] border border-[#1A1D24] flex flex-col justify-between shadow-sm">
-                    <span className="text-[10px] font-mono font-bold text-[#8A8F98] uppercase">Patient SpO2 Avg</span>
-                    <div className="mt-3 flex items-baseline space-x-1.5">
-                      <span className="text-4xl font-bold text-[#10B981]">{metrics.spo2}</span>
-                      <span className="text-xs text-[#8A8F98]">{activeRiskLabel}</span>
+              <div className="w-full max-w-6xl animate-fade-in space-y-5">
+
+                {/* ── STATUS BANNER ── */}
+                <div className="flex items-center justify-between px-5 py-3 rounded-xl bg-[#0D1117] border border-[#1C2333]"
+                  style={{ borderLeft: `3px solid ${riskTone==='high'?'#D97706':riskTone==='medium'?'#F59E0B':'#10B981'}` }}>
+                  <div className="flex items-center gap-4">
+                    <span className="w-2.5 h-2.5 rounded-full animate-pulse" style={{ background: riskTone==='high'?'#D97706':'#10B981' }}/>
+                    <div>
+                      <div className="font-mono text-[10px] font-bold text-[#8A8F98] uppercase tracking-widest">Triage Complete · AI Analysis Ready</div>
+                      <div className="text-white font-bold text-sm mt-0.5">{triageResponse ? activeRiskLabel : 'Awaiting symptom review'}</div>
                     </div>
                   </div>
-                  <div className="p-5 rounded-xl bg-[#0A0B10] border border-[#1A1D24] flex flex-col justify-between shadow-sm">
-                    <span className="text-[10px] font-mono font-bold text-[#8A8F98] uppercase">Patient BPM Avg</span>
-                    <span className="text-4xl font-bold text-white mt-3">{metrics.bpm}</span>
-                  </div>
-                  <div className="p-5 rounded-xl bg-[#0A0B10] border border-[#1A1D24] flex flex-col justify-between shadow-sm">
-                    <span className="text-[10px] font-mono font-bold text-[#8A8F98] uppercase">Current Risk Index</span>
-                    <span className="text-4xl font-bold text-white mt-3">{metrics.riskScore}</span>
+                  <div className="flex items-center gap-3">
+                    <div className="text-right">
+                      <div className="font-mono text-[9px] text-[#4B5A6E] uppercase">AI Confidence</div>
+                      <div className="font-mono text-[13px] font-bold text-[#00D1FF]">{triageResponse ? `${Math.min(99, 72 + score / 5).toFixed(1)}%` : '—'}</div>
+                    </div>
+                    <div className="text-right">
+                      <div className="font-mono text-[9px] text-[#4B5A6E] uppercase">Risk Score</div>
+                      <div className="font-mono text-[13px] font-bold" style={{ color: riskTone==='high'?'#D97706':'#10B981' }}>{score}/100</div>
+                    </div>
+                    <div className="text-right hidden md:block">
+                      <div className="font-mono text-[9px] text-[#4B5A6E] uppercase">References</div>
+                      <div className="font-mono text-[13px] font-bold text-[#8B97AA]">{ragChunks}</div>
+                    </div>
                   </div>
                 </div>
 
-                <div className="grid grid-cols-1 md:grid-cols-12 gap-6 items-start">
-                  <div className="md:col-span-7 space-y-5 font-mono text-sm text-left">
-                    <div className="p-6 rounded-xl bg-[#0A0B10] border border-[#1A1D24] shadow-sm">
-                      <span className="text-xs text-[#06B6D4] uppercase block mb-3 font-bold tracking-widest">Care Summary</span>
-                      <p className="text-[13px] text-[#D1D5DB] leading-relaxed">
-                        {clinicalSummary}
-                      </p>
-                    </div>
-                    <div className="p-6 rounded-xl bg-[#0A0B10] border border-[#1A1D24] shadow-sm">
-                      <span className="text-xs text-[#06B6D4] uppercase block mb-3 font-bold tracking-widest">Guidance</span>
-                      <p className="text-[13px] text-[#D1D5DB] leading-relaxed">{guidance}</p>
-                    </div>
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
-                      <div className="p-5 rounded-xl bg-[#0A0B10] border border-[#1A1D24] shadow-sm">
-                        <span className="text-[10px] text-[#8A8F98] uppercase block mb-3 font-bold tracking-widest">Helpful Notes</span>
-                        {(triageResponse?.operational_insights || ["Run symptom review to populate helpful care notes."]).map((item) => (
-                          <p key={item} className="text-[11px] text-[#D1D5DB] leading-relaxed mb-2">{item}</p>
-                        ))}
+                {/* ── 4 STAT TILES ── */}
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                  {[
+                    { label: 'SpO2', value: metrics.spo2, unit: '%', spark: metrics.spo2Spark, color: riskTone==='high'?'#D97706':'#10B981', trend: metrics.spo2Trend },
+                    { label: 'Heart Rate', value: metrics.bpm, unit: 'bpm', spark: metrics.bpmSpark, color: '#06B6D4', trend: metrics.bpmTrend },
+                    { label: 'Resp Rate', value: metrics.resp, unit: '/min', spark: metrics.respSpark, color: '#A78BFA', trend: metrics.respTrend },
+                    { label: 'Risk Index', value: metrics.riskScore, unit: '/100', spark: [score*0.6,score*0.7,score*0.8,score*0.9,score,score], color: riskTone==='high'?'#F59E0B':'#10B981', trend: riskTone==='high'?'▲':'▼' },
+                  ].map(({ label, value, unit, spark, color, trend }) => (
+                    <div key={label} className="p-5 rounded-xl bg-[#0A0B10] border border-[#1A1D24] flex flex-col justify-between"
+                      style={{ boxShadow: `0 0 0 1px ${color}10` }}>
+                      <div className="font-mono text-[10px] font-bold text-[#8A8F98] uppercase tracking-widest">{label}</div>
+                      <div className="flex items-baseline gap-1.5 my-3">
+                        <span className="text-3xl font-bold text-white">{value}</span>
+                        <span className="text-xs text-[#4B5A6E]">{unit}</span>
+                        <span className="text-sm font-bold ml-1" style={{ color }}>{trend}</span>
                       </div>
-                      <div className="p-5 rounded-xl bg-[#0A0B10] border border-[#1A1D24] shadow-sm">
-                        <span className="text-[10px] text-[#8A8F98] uppercase block mb-3 font-bold tracking-widest">Safety Actions</span>
-                        {(triageResponse?.safety_actions || ["Safety actions will appear after the symptom review completes."]).map((item) => (
-                          <p key={item} className="text-[11px] text-[#D1D5DB] leading-relaxed mb-2">{item}</p>
-                        ))}
-                      </div>
+                      <Sparkline data={spark} color={color} />
                     </div>
-                  </div>
-
-                  <div className="md:col-span-5 rounded-xl overflow-hidden" style={{ height: 380 }}>
-                    <CopilotChat
-                      triageResponse={triageResponse}
-                      patientMessage={patientMessage}
-                    />
-                  </div>
+                  ))}
                 </div>
 
-                {/* Remove MedicalReportPreview inline embed — replaced by ClinicalReport overlay button */}
+                {/* ── 3-COLUMN INTELLIGENCE GRID ── */}
+                <div className="grid grid-cols-1 md:grid-cols-12 gap-5 items-start">
+
+                  {/* LEFT: AI Clinical Intelligence */}
+                  <div className="md:col-span-7 space-y-4">
+
+                    {/* AI Reasoning */}
+                    <div className="p-5 rounded-xl bg-[#0A0B10] border border-[#06B6D4]/30">
+                      <div className="flex items-center gap-2 mb-3 pb-3 border-b border-[#1A1D24]">
+                        <svg width="12" height="12" viewBox="0 0 24 24" fill="none"><path d="M22 12h-4l-3 9L9 3l-3 9H2" stroke="#06B6D4" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/></svg>
+                        <span className="font-mono text-[10px] font-bold text-[#06B6D4] uppercase tracking-widest">AI Clinical Assessment</span>
+                      </div>
+                      <p className="text-[13px] text-[#D1D5DB] leading-relaxed font-mono">{clinicalSummary}</p>
+                    </div>
+
+                    {/* Guidance */}
+                    <div className="p-5 rounded-xl bg-[#0A0B10] border border-[#1A1D24]">
+                      <span className="font-mono text-[10px] font-bold text-[#8A8F98] uppercase tracking-widest block mb-3">Operational Guidance</span>
+                      <p className="text-[13px] text-[#D1D5DB] leading-relaxed font-mono">{guidance}</p>
+                    </div>
+
+                    {/* 2-col: Insights + Safety */}
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <div className="p-5 rounded-xl bg-[#0A0B10] border border-[#1A1D24]">
+                        <span className="font-mono text-[9px] font-bold text-[#8A8F98] uppercase tracking-widest block mb-3">Clinical Insights</span>
+                        {(triageResponse?.operational_insights || ['Complete symptom review to populate insights.']).map((item, i) => (
+                          <div key={i} className="flex items-start gap-2 mb-2">
+                            <span className="text-[#06B6D4] mt-0.5 shrink-0 text-[10px]">›</span>
+                            <p className="text-[11px] text-[#D1D5DB] leading-relaxed font-mono">{item}</p>
+                          </div>
+                        ))}
+                      </div>
+                      <div className="p-5 rounded-xl bg-[#0A0B10] border border-[#1A1D24]">
+                        <span className="font-mono text-[9px] font-bold text-[#8A8F98] uppercase tracking-widest block mb-3">Safety Protocols</span>
+                        {(triageResponse?.safety_actions || ['Safety protocols will appear after triage.']).map((item, i) => (
+                          <div key={i} className="flex items-start gap-2 mb-2">
+                            <span className="text-[#10B981] mt-0.5 shrink-0 text-[10px]">✓</span>
+                            <p className="text-[11px] text-[#D1D5DB] leading-relaxed font-mono">{item}</p>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* RIGHT: Escalation + Actions */}
+                  <div className="md:col-span-5 space-y-4">
+
+                    {/* Severity tiers */}
+                    <div className="p-5 rounded-xl bg-[#0A0B10] border border-[#1A1D24]">
+                      <span className="font-mono text-[10px] font-bold text-[#8A8F98] uppercase tracking-widest block mb-4">Escalation Routing</span>
+                      <div className="space-y-2.5">
+                        {[
+                          { tier:'LOW', label:'Home Monitoring', color:'#10B981', active: riskTone==='low' },
+                          { tier:'MEDIUM', label:'Clinician Consult', color:'#F59E0B', active: riskTone==='medium' },
+                          { tier:'HIGH', label:'Emergency Escalation', color:'#D97706', active: riskTone==='high' },
+                        ].map(({ tier, label, color, active }) => (
+                          <div key={tier} className="flex items-center gap-3 p-3 rounded-lg transition-all"
+                            style={{ background: active?`${color}10`:'transparent', border: `1px solid ${active?color+'40':'#1A1D24'}` }}>
+                            <div className="w-1.5 h-8 rounded-full" style={{ background: active?color:'#1A1D24' }}/>
+                            <div className="flex-1">
+                              <div className="font-mono text-[9px] font-bold uppercase tracking-widest" style={{ color: active?color:'#4B5A6E' }}>{tier}</div>
+                              <div className="text-[11px] text-white font-medium">{label}</div>
+                            </div>
+                            {active && <span className="w-2 h-2 rounded-full animate-pulse" style={{ background: color }}/>}
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+
+                    {/* Audit timeline */}
+                    <div className="p-5 rounded-xl bg-[#0A0B10] border border-[#1A1D24]">
+                      <span className="font-mono text-[10px] font-bold text-[#8A8F98] uppercase tracking-widest block mb-3">Triage Audit Trail</span>
+                      <div className="space-y-2 font-mono text-[10px]">
+                        {[
+                          { t:'Intake', tag:'[START]', c:'#8A8F98' },
+                          { t:'Symptom extraction', tag:'[PARSE]', c:'#06B6D4' },
+                          { t:`Risk scored: ${score}/100`, tag:'[SCORE]', c: riskTone==='high'?'#D97706':'#10B981' },
+                          { t: activeRiskLabel, tag:'[ROUTED]', c:'#10B981' },
+                        ].map(({ t, tag, c }, i) => (
+                          <div key={i} className="flex items-center gap-2">
+                            <span style={{ color:'#4B5A6E' }}>{'14:' + String(10+i*2).padStart(2,'0')}</span>
+                            <span style={{ color: c }} className="font-bold w-20 shrink-0">{tag}</span>
+                            <span style={{ color:'#D1D5DB' }}>{t}</span>
+                          </div>
+                        ))}
+                        {triageResponse && (
+                          <div className="flex items-center gap-2">
+                            <span style={{ color:'#4B5A6E' }}>14:18</span>
+                            <span className="text-[#10B981] font-bold w-20 shrink-0">[DONE]</span>
+                            <span className="text-[#10B981] animate-pulse">Analysis complete</span>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+
+                    {/* Action buttons */}
+                    <div className="p-5 rounded-xl border flex flex-col gap-3"
+                      style={{ background:'#060B10', borderColor:'#06B6D4' + '40' }}>
+                      <span className="font-mono text-[10px] font-bold text-[#06B6D4] uppercase tracking-widest">Actions</span>
+                      <button onClick={handlePrimaryAction}
+                        className="w-full py-3 rounded font-bold text-sm bg-white hover:bg-[#EDEDEE] text-[#060609] transition-colors">
+                        Share Summary with Care Team
+                      </button>
+                      <button onClick={() => setShowReport(true)}
+                        disabled={!triageResponse}
+                        className="w-full py-3 rounded font-bold text-sm transition-all"
+                        style={{
+                          background: triageResponse?'linear-gradient(135deg,#00D1FF18,#10B98118)':'#0A0B10',
+                          border: `1px solid ${triageResponse?'#00D1FF40':'#1A1D24'}`,
+                          color: triageResponse?'#00D1FF':'#4B5563',
+                        }}>
+                        {triageResponse ? '⬡ Generate Intelligence Report' : 'Run triage to generate report'}
+                      </button>
+                      {/* Floating copilot hint */}
+                      <div className="flex items-center gap-2 pt-1 border-t border-[#1A1D24]">
+                        <div className="w-5 h-5 rounded-full bg-[#00D1FF18] border border-[#00D1FF30] flex items-center justify-center flex-shrink-0">
+                          <svg width="8" height="8" viewBox="0 0 24 24" fill="none"><path d="M22 12h-4l-3 9L9 3l-3 9H2" stroke="#00D1FF" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/></svg>
+                        </div>
+                        <span className="font-mono text-[9px] text-[#4B5A6E]">Ask PulseGuard AI anything · floating copilot active ↘</span>
+                      </div>
+                      {actionFeedback && <div className="p-3 rounded bg-[#060609] border border-[#1A1D24] font-mono text-[10px] text-[#10B981] text-center">{actionFeedback}</div>}
+                    </div>
+                  </div>
+                </div>
               </div>
             )}
+
           </main>
 
           {/* LOWER ZONE: HIGH-END COMPACT REPLAY DESK SCRUBBER */}
