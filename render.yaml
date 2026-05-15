@@ -1,6 +1,5 @@
 # render.yaml — PulseGuard AI deployment blueprint
-# Defines both services (backend + vector) in one file.
-# Render will pick this up automatically on repo connect.
+# Uses existing Dockerfiles in backend/ and vector-service/
 
 services:
   # ─────────────────────────────────────────────────────────────
@@ -8,40 +7,37 @@ services:
   # ─────────────────────────────────────────────────────────────
   - type: web
     name: pulseguard-backend
-    runtime: python
-    rootDir: backend
-    buildCommand: pip install -r requirements.txt
-    startCommand: uvicorn app.main:app --host 0.0.0.0 --port $PORT
+    runtime: docker
+    dockerfilePath: ./backend/Dockerfile
+    dockerContext: ./backend
     plan: free
     envVars:
       - key: OPENAI_API_KEY
-        sync: false          # You will set this manually in Render dashboard
+        sync: false
       - key: MONGODB_URI
-        sync: false          # You will set this manually (MongoDB Atlas URI)
+        sync: false
       - key: VECTOR_SERVICE_URL
-        fromService:
-          name: pulseguard-vector
-          type: web
-          property: hostport   # Auto-wired to the vector service URL
+        sync: false          # Paste the pulseguard-vector URL after it deploys
       - key: ENV
         value: production
       - key: OPENAI_MODEL
         value: gpt-4o-mini
+      - key: FRONTEND_ORIGIN
+        sync: false          # Paste your Vercel URL here
 
   # ─────────────────────────────────────────────────────────────
   # SERVICE 2: FAISS Vector Service
   # ─────────────────────────────────────────────────────────────
   - type: web
     name: pulseguard-vector
-    runtime: python
-    rootDir: vector-service
-    buildCommand: pip install -r requirements.txt
-    startCommand: uvicorn app.main:app --host 0.0.0.0 --port $PORT
+    runtime: docker
+    dockerfilePath: ./vector-service/Dockerfile
+    dockerContext: ./vector-service
     plan: free
     envVars:
       - key: OPENAI_API_KEY
-        sync: false          # Same key as backend — set manually
+        sync: false
       - key: OPENAI_EMBEDDING_MODEL
         value: text-embedding-3-small
       - key: VECTOR_DATA_DIR
-        value: /tmp/faiss    # Ephemeral — use for demo; add a Render Disk for persistence
+        value: /tmp/faiss
