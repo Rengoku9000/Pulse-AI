@@ -421,7 +421,7 @@ export default function CinematicIntro({ onComplete }) {
               textShadow: "0 2px 24px rgba(0,0,0,0.8)",
             }}
           >
-            Every second matters.
+            Care starts with listening.
           </p>
           {/* subtle waveform beneath */}
           <div
@@ -484,7 +484,7 @@ export default function CinematicIntro({ onComplete }) {
                 textTransform: "uppercase",
               }}
             >
-              SCANNING
+              LISTENING
             </p>
           </div>
           {/* Top-right bracket */}
@@ -519,7 +519,7 @@ export default function CinematicIntro({ onComplete }) {
                 textTransform: "uppercase",
               }}
             >
-              AI ACTIVE
+              CARE READY
             </p>
           </div>
           {/* bottom telemetry bar */}
@@ -536,7 +536,7 @@ export default function CinematicIntro({ onComplete }) {
               transition: "opacity 0.8s ease",
             }}
           >
-            {["SpO2 98%", "HR 72bpm", "NEURAL LINK"].map((label) => (
+            {["SpO2 98%", "Heart rate 72", "Guidance ready"].map((label) => (
               <span
                 key={label}
                 style={{
@@ -604,7 +604,7 @@ export default function CinematicIntro({ onComplete }) {
               transition: "opacity 0.8s ease",
             }}
           >
-            AI Healthcare Triage & Operational Intelligence
+            Patient-friendly AI symptom guidance
           </p>
           {/* activation bar */}
           <div
@@ -636,7 +636,7 @@ export default function CinematicIntro({ onComplete }) {
                 textTransform: "uppercase",
               }}
             >
-              SYSTEM ONLINE — TRIAGE CORE ACTIVE
+              READY TO HELP - SAFE GUIDANCE ACTIVE
             </span>
           </div>
         </div>

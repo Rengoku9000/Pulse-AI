@@ -57,18 +57,18 @@ const App = () => {
   const [aiThinking, setAiThinking] = React.useState(false);
   
   const [chatMessages, setChatMessages] = React.useState([
-    { id: 1, sender: 'ai', text: '⚡ PulseGuard Clinical Intelligence online. Ready to synthesize telemetry buffers.' }
+    { id: 1, sender: 'ai', text: 'PulseGuard AI is ready. Tell me what you are feeling, and I will help guide the next safe step.' }
   ]);
 
   // Production Event logs arrays
   const [eventFeed, setEventFeed] = React.useState([
-    { id: 1, time: '18:00:12', text: 'Patient ID-7422 registered at Triage Intake.', type: 'info' },
-    { id: 2, time: '18:01:45', text: 'Telemetry synchronization streams active.', type: 'success' }
+    { id: 1, time: '18:00:12', text: 'Patient symptom intake started.', type: 'info' },
+    { id: 2, time: '18:01:45', text: 'Safety checks and language support are ready.', type: 'success' }
   ]);
 
   const [terminalLogs, setTerminalLogs] = React.useState([
-    { id: 1, time: '14:10', text: "SpO2 stabilized at 98%. Heart Rate nominal at 72 BPM.", label: "[MONITOR]" },
-    { id: 2, time: '14:11', text: "Diagnostic voice intake active in Kannada & Hindi.", label: "[SYSTEM]" }
+    { id: 1, time: '14:10', text: "Vitals preview is calm and ready for symptom review.", label: "[CARE]" },
+    { id: 2, time: '14:11', text: "Voice intake is available in multiple languages.", label: "[READY]" }
   ]);
 
   const score = triageResponse?.emergency_score ?? 0;
@@ -77,13 +77,13 @@ const App = () => {
   const activeRiskLabel = triageResponse?.risk_level || "Awaiting Triage";
   const clinicalSummary =
     triageResponse?.clinical_summary ||
-    "Submit patient symptoms to activate your backend triage engine, RAG lookup, risk scoring, and safety guardrails.";
+    "Share symptoms to receive patient-friendly guidance, safety checks, and the right next step.";
   const guidance =
     triageResponse?.guidance ||
-    "No live backend assessment has been run yet. Enter symptoms and activate triage.";
+    "No symptom review has been run yet. Enter what the patient is feeling to get safe guidance.";
   const recommendation =
     triageResponse?.emergency_recommendation ||
-    "No escalation recommendation has been generated yet.";
+    "No care recommendation has been generated yet.";
   const language = triageResponse?.language || "Pending";
   const ragChunks = triageResponse?.telemetry?.rag_context_chunks ?? 0;
 
@@ -133,8 +133,8 @@ const App = () => {
     const timeNow = new Date().toISOString().split('T')[1].slice(0, 5);
     setTerminalLogs(prev => [
       ...prev.slice(-5),
-      { id: Date.now(), time: timeNow, text: `Backend triage completed: ${triageResponse.risk_level} at ${triageResponse.emergency_score}/100.`, label: score >= 70 ? "[CRITICAL]" : score >= 30 ? "[AI CORE]" : "[SYSTEM]" },
-      { id: Date.now() + 1, time: timeNow, text: `RAG context chunks: ${triageResponse.telemetry?.rag_context_chunks ?? 0}. Language: ${triageResponse.language}.`, label: "[RAG]" },
+      { id: Date.now(), time: timeNow, text: `Symptom review completed: ${triageResponse.risk_level} at ${triageResponse.emergency_score}/100.`, label: score >= 70 ? "[URGENT]" : score >= 30 ? "[REVIEW]" : "[CARE]" },
+      { id: Date.now() + 1, time: timeNow, text: `Medical context used: ${triageResponse.telemetry?.rag_context_chunks ?? 0} references. Language: ${triageResponse.language}.`, label: "[INFO]" },
     ]);
     setChatMessages(prev => [
       ...prev,
@@ -159,9 +159,9 @@ const App = () => {
     if (scrollProgress >= 0.15 && scrollProgress < 0.50) {
       const interval = setInterval(() => {
         const msgs = [
-          { text: "Oxygen saturation boundary breached (89% ↓).", label: "[CRITICAL]" },
-          { text: "Heart rate variability scaling rapidly (135 BPM ↑).", label: "[CRITICAL]" },
-          { text: "Predictive engine calculating escalation routing trajectories.", label: "[AI CORE]" }
+          { text: "Oxygen level may need closer attention.", label: "[URGENT]" },
+          { text: "Heart rate looks elevated in this example.", label: "[REVIEW]" },
+          { text: "Checking whether symptoms need urgent attention.", label: "[REVIEW]" }
         ];
         const nextMsg = msgs[Math.floor(Math.random() * msgs.length)];
         const timeNow = new Date().toISOString().split('T')[1].slice(0, 5);
@@ -178,7 +178,7 @@ const App = () => {
         clearInterval(autoScrollIntervalId);
         setAutoScrollIntervalId(null);
         const timeStr = new Date().toTimeString().split(' ')[0];
-        setEventFeed(f => [{ id: Date.now(), time: timeStr, text: '⏸️ OPERATOR: Auto-scroll sequence manually intercepted', type: 'warn' }, ...f]);
+        setEventFeed(f => [{ id: Date.now(), time: timeStr, text: 'Auto-scroll paused. You can continue at your own pace.', type: 'warn' }, ...f]);
       }
     };
     window.addEventListener('wheel', handleWheel, { passive: true });
@@ -206,12 +206,12 @@ const App = () => {
       setTriageResponse(data);
       const timeStr = new Date().toTimeString().split(' ')[0];
       setEventFeed(f => [
-        { id: Date.now(), time: timeStr, text: `LIVE TRIAGE: ${data.risk_level} generated by backend /chat`, type: data.emergency_score >= 70 ? 'warn' : 'success' },
+        { id: Date.now(), time: timeStr, text: `Symptom review completed: ${data.risk_level}`, type: data.emergency_score >= 70 ? 'warn' : 'success' },
         ...f,
       ]);
       scrollToChapterOffset(data.emergency_score >= 70 ? 0.4 : data.emergency_score >= 30 ? 0.28 : 0.98);
     } catch (err) {
-      setTriageError("Could not reach the backend /chat endpoint. Make sure the API is running.");
+      setTriageError("Unable to review symptoms right now. Please try again, or consult a healthcare professional if symptoms feel urgent.");
     } finally {
       setTriageLoading(false);
     }
@@ -221,8 +221,8 @@ const App = () => {
   const handlePrimaryAction = () => {
     const timeStr = new Date().toTimeString().split(' ')[0];
     
-    setActionFeedback(`${recommendation} Handoff summary prepared from backend triage response.`);
-    setEventFeed(f => [{ id: Date.now(), time: timeStr, text: '✅ ESCALATION: Duty Physician alerted. Patient vitals registering stabilization.', type: 'success' }, ...f]);
+    setActionFeedback(`${recommendation} A clear care summary has been prepared.`);
+    setEventFeed(f => [{ id: Date.now(), time: timeStr, text: 'Care team notification prepared with the symptom summary.', type: 'success' }, ...f]);
 
     if (autoScrollIntervalId) clearInterval(autoScrollIntervalId);
     
@@ -250,7 +250,7 @@ const App = () => {
   };
 
   const handleSecondaryAction = (label) => {
-    setActionFeedback(`Clinical note recorded: ${label}. Risk telemetry streams continuing to buffer.`);
+    setActionFeedback(`Care note saved: ${label}. The guidance panel is still available.`);
   };
 
 
@@ -269,15 +269,15 @@ const App = () => {
     resp: isFailed ? (score >= 70 ? '28' : '22') : '16',
     respTrend: isFailed ? '↑' : '',
     respSpark: isFailed ? [16, 18, 20, 22, score >= 70 ? 25 : 22, score >= 70 ? 28 : 22, score >= 70 ? 28 : 22] : [16, 15, 16, 16, 17, 16],
-    statusStr: triageResponse ? activeRiskLabel.toUpperCase() : 'AWAITING TRIAGE',
+    statusStr: triageResponse ? activeRiskLabel.toUpperCase() : 'READY TO HELP',
     riskScore: `${score}/100`,
   };
 
   const topoNodes = [ 
-    { id: 'node1', label: 'Voice Intake' }, 
-    { id: 'node2', label: 'Telemetry' }, 
-    { id: 'node3', label: 'AI Risk Engine' }, 
-    { id: 'node4', label: 'Escalation Flow' } 
+    { id: 'node1', label: 'Share Symptoms' },
+    { id: 'node2', label: 'Check Vitals' },
+    { id: 'node3', label: 'Safety Review' },
+    { id: 'node4', label: 'Care Guidance' }
   ];
 
   // Highly restrained, data-first ambient lighting interpolation style maps
@@ -314,7 +314,7 @@ const App = () => {
     );
   };
 
-  return (
+    return (
     <div className="w-full bg-[#060609] text-[#EDEDEE] font-sans selection:bg-[#06B6D4] selection:text-white relative select-none antialiased">
       {/* ── PERSISTENT AMBIENT BACKGROUND (mounts once, never remounts) ── */}
       <AmbientBackground chapter={currentChapter} riskTone={riskTone} />
@@ -364,7 +364,7 @@ const App = () => {
                 </div>
                 <div className="flex flex-col">
                   <span className="font-bold tracking-tight text-white text-sm">PulseGuard <span className="text-[#06B6D4]">AI</span></span>
-                  <span className="text-[9px] text-[#8A8F98] font-mono tracking-wider uppercase">Clinical Operations Core</span>
+                  <span className="text-[9px] text-[#8A8F98] font-mono tracking-wider uppercase">Patient Support and Safe Triage</span>
                 </div>
               </div>
             </div>
@@ -373,11 +373,11 @@ const App = () => {
               <div className="hidden lg:flex items-center space-x-4 border-r border-[#1A1D24] pr-5">
                 <span className="flex items-center space-x-1.5 text-[10px] bg-[#10B981]/10 text-[#10B981] px-2 py-0.5 rounded border border-[#10B981]/20">
                   <span className="w-1.5 h-1.5 bg-[#10B981] rounded-full animate-pulse"></span>
-                  <span>MULTILINGUAL: ACTIVE</span>
+                  <span>LANGUAGE HELP READY</span>
                 </span>
                 <span className="flex items-center space-x-1.5 text-[10px] bg-[#06B6D4]/10 text-[#06B6D4] px-2 py-0.5 rounded border border-[#06B6D4]/20">
                   <span className="w-1.5 h-1.5 bg-[#06B6D4] rounded-full animate-pulse"></span>
-                  <span>VOICE: LISTENING</span>
+                  <span>VOICE INPUT READY</span>
                 </span>
               </div>
               <div className="hidden lg:flex items-center space-x-2 text-[#8A8F98] pr-2">
@@ -392,7 +392,7 @@ const App = () => {
             <div className="max-w-5xl mx-auto w-full flex items-center justify-between gap-2 font-mono text-xs">
               
               <div className="flex items-center space-x-2 text-[#8A8F98] shrink-0 hidden sm:flex">
-                <span className="text-[11px] font-bold text-white uppercase tracking-wider hidden lg:inline">Routing Topology</span>
+                <span className="text-[11px] font-bold text-white uppercase tracking-wider hidden lg:inline">Care Journey</span>
               </div>
 
               {/* Nodes Array */}
@@ -450,7 +450,7 @@ const App = () => {
             {currentChapter === 2 && (
               <div className="w-full max-w-5xl animate-fade-in space-y-8">
                 <div className="text-center">
-                  <h2 className="text-3xl font-bold text-white tracking-tight">Clinical Telemetry Fluctuations</h2>
+                  <h2 className="text-3xl font-bold text-white tracking-tight">Your Symptoms Are Being Reviewed</h2>
                 </div>
                 
                 <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
@@ -466,12 +466,12 @@ const App = () => {
                   
                   {/* Audit Trail Log */}
                   <div className="lg:col-span-8 bg-[#0A0B10] border border-[#1A1D24] rounded-xl p-5 font-mono text-[11px] flex flex-col h-[280px]">
-                    <div className="text-[#8A8F98] pb-3 border-b border-[#1A1D24] mb-3 font-bold uppercase tracking-widest">Active Audit Trail Logger</div>
+                    <div className="text-[#8A8F98] pb-3 border-b border-[#1A1D24] mb-3 font-bold uppercase tracking-widest">Care Review Notes</div>
                     <div className="flex-1 overflow-y-auto space-y-3 pr-2">
                       {terminalLogs.map((log) => (
                         <div key={log.id} className="flex items-start space-x-3 text-[#D1D5DB] leading-relaxed border-l-2 pl-3 border-[#1A1D24]">
                           <span className="text-[#8A8F98] shrink-0 w-12">{log.time}</span>
-                          <span className={`shrink-0 font-bold w-24 ${log.label === '[CRITICAL]' ? 'text-[#D97706]' : 'text-[#06B6D4]'}`}>{log.label}</span>
+                          <span className={`shrink-0 font-bold w-24 ${log.label === '[URGENT]' ? 'text-[#D97706]' : 'text-[#06B6D4]'}`}>{log.label}</span>
                           <span className="text-white">{log.text}</span>
                         </div>
                       ))}
@@ -485,7 +485,7 @@ const App = () => {
             {currentChapter === 3 && (
               <div className="w-full animate-fade-in flex flex-col h-full space-y-6">
                 <div className="text-center shrink-0">
-                  <h2 className="text-3xl font-bold text-white tracking-tight">AI Diagnostic Triage Synthesis</h2>
+                  <h2 className="text-3xl font-bold text-white tracking-tight">Safe AI Symptom Guidance</h2>
                 </div>
                 
                 <div className="flex-1 w-full grid grid-cols-1 lg:grid-cols-12 gap-5 min-h-0">
@@ -524,21 +524,21 @@ const App = () => {
                   <div className="lg:col-span-6 flex flex-col space-y-4 min-h-0 justify-center px-2">
                     {/* Reasoning Block 1 */}
                     <div className="p-5 rounded-xl bg-[#0A0B10] border border-[#1A1D24] opacity-0 animate-fade-in-up" style={{ animationDelay: '0.1s', animationFillMode: 'both' }}>
-                      <div className="text-[10px] font-mono font-bold text-[#8A8F98] uppercase pb-2 border-b border-[#1A1D24]">[ STEP 01 ] // EVIDENCE EXTRACTION</div>
+                      <div className="text-[10px] font-mono font-bold text-[#8A8F98] uppercase pb-2 border-b border-[#1A1D24]">Step 01 - Symptoms Shared</div>
                       <p className="text-sm text-white font-medium leading-relaxed pt-3">{patientMessage}</p>
                     </div>
                     
                     {/* Reasoning Block 2 */}
                     <div className="p-5 rounded-xl bg-[#0A0B10] border border-[#1A1D24] opacity-0 animate-fade-in-up" style={{ animationDelay: '0.6s', animationFillMode: 'both' }}>
-                      <div className="text-[10px] font-mono font-bold text-[#06B6D4] uppercase pb-2 border-b border-[#1A1D24]">[ STEP 02 ] // CONFIDENCE MAPPING</div>
-                      <p className="text-sm text-white font-medium leading-relaxed pt-3">Backend score computed at <strong className="text-[#06B6D4] text-base">{score}/100</strong>. Language: {language}. RAG chunks: {ragChunks}.</p>
+                      <div className="text-[10px] font-mono font-bold text-[#06B6D4] uppercase pb-2 border-b border-[#1A1D24]">Step 02 - Safety Check</div>
+                      <p className="text-sm text-white font-medium leading-relaxed pt-3">Care urgency score is <strong className="text-[#06B6D4] text-base">{score}/100</strong>. Language: {language}. Medical references checked: {ragChunks}.</p>
                     </div>
                     
                     {/* Reasoning Block 3 */}
                     <div className="p-6 rounded-xl bg-[#140D0A] border-2 border-[#D97706] shadow-sm opacity-0 animate-fade-in-up" style={{ animationDelay: '1.2s', animationFillMode: 'both' }}>
                       <div className="text-[11px] font-mono font-bold text-[#D97706] uppercase pb-2 border-b border-[#D97706]/30 flex items-center space-x-2">
                         <span className="w-2 h-2 bg-[#D97706] rounded-full animate-pulse"></span>
-                        <span>[ STEP 03 ] // OPERATIONAL RECOMMENDATION</span>
+                        <span>Step 03 - Suggested Next Step</span>
                       </div>
                       <p className="text-lg text-white font-bold leading-relaxed pt-3">{clinicalSummary}</p>
                     </div>
@@ -547,20 +547,20 @@ const App = () => {
                   {/* RIGHT COLUMN: SEVERITY ESCALATION ROUTING */}
                   <div className="lg:col-span-3 flex flex-col space-y-3 min-h-0">
                     <div className="w-full text-center py-2 mb-2 border-b border-[#1A1D24]">
-                       <span className="text-[10px] font-mono font-bold text-[#8A8F98] uppercase tracking-widest">Routing Logic</span>
+                       <span className="text-[10px] font-mono font-bold text-[#8A8F98] uppercase tracking-widest">Care Level</span>
                     </div>
                     <div className="p-4 rounded-xl bg-[#0A0B10] border border-[#1A1D24] opacity-40 flex items-center space-x-3">
                       <div className="w-1.5 h-full bg-[#8A8F98] rounded-sm absolute left-0 top-0 bottom-0"></div>
                       <div>
                         <span className="text-[#8A8F98] text-[10px] font-mono font-bold tracking-widest block uppercase">Low Risk</span>
-                        <span className="text-white text-xs">Standard Queue</span>
+                        <span className="text-white text-xs">Self-care guidance</span>
                       </div>
                     </div>
                     <div className="p-4 rounded-xl bg-[#0A0B10] border border-[#1A1D24] opacity-40 flex items-center space-x-3">
                       <div className="w-1.5 h-full bg-[#F59E0B] rounded-sm absolute left-0 top-0 bottom-0"></div>
                       <div>
                         <span className="text-[#F59E0B] text-[10px] font-mono font-bold tracking-widest block uppercase">Medium Risk</span>
-                        <span className="text-white text-xs">Secondary Consult</span>
+                        <span className="text-white text-xs">Consider clinician advice</span>
                       </div>
                     </div>
                     <div className="p-5 rounded-xl bg-[#140C07] border border-[#D97706] flex flex-col justify-center transform scale-[1.02] relative overflow-hidden">
@@ -570,7 +570,7 @@ const App = () => {
                         <span>High Risk</span>
                       </span>
                       <span className="text-white font-bold text-sm">{activeRiskLabel}</span>
-                      <span className="text-[#D97706]/80 text-xs mt-2 italic font-mono">{triageResponse?.topology_stage || "backend pending"}</span>
+                      <span className="text-[#D97706]/80 text-xs mt-2 italic font-mono">{triageResponse?.topology_stage || "review pending"}</span>
                     </div>
                   </div>
 
@@ -582,30 +582,30 @@ const App = () => {
             {currentChapter === 4 && (
               <div className="w-full max-w-4xl animate-fade-in space-y-6">
                 <div className="text-center">
-                  <h2 className="text-3xl font-bold text-white tracking-tight">Clinical Escalation Routing Matrix</h2>
+                  <h2 className="text-3xl font-bold text-white tracking-tight">Recommended Level of Care</h2>
                 </div>
                 
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                   {/* LOW */}
                   <div className="p-6 rounded-xl bg-[#0A0B10] border border-[#1A1D24] opacity-40 flex flex-col">
-                    <span className="text-[#8A8F98] text-[11px] font-mono font-bold tracking-widest mb-2 uppercase">Severity: Low</span>
+                    <span className="text-[#8A8F98] text-[11px] font-mono font-bold tracking-widest mb-2 uppercase">Care level: Low</span>
                     <h4 className="text-white font-bold text-lg mb-2">Home Monitoring</h4>
-                    <p className="text-[#8A8F98] text-xs">Vitals within standard operational bounds. Scheduled clinical follow-up applied.</p>
+                    <p className="text-[#8A8F98] text-xs">Symptoms may be suitable for home care and monitoring, with medical advice if they worsen.</p>
                   </div>
                   {/* MED */}
                   <div className="p-6 rounded-xl bg-[#0A0B10] border border-[#1A1D24] opacity-40 flex flex-col">
-                    <span className="text-[#F59E0B] text-[11px] font-mono font-bold tracking-widest mb-2 uppercase">Severity: Medium</span>
-                    <h4 className="text-white font-bold text-lg mb-2">Secondary Consult</h4>
-                    <p className="text-[#8A8F98] text-xs">Moderate variance detected. Diagnostic re-evaluation queued for physician review.</p>
+                    <span className="text-[#F59E0B] text-[11px] font-mono font-bold tracking-widest mb-2 uppercase">Care level: Medium</span>
+                    <h4 className="text-white font-bold text-lg mb-2">Talk to a Clinician</h4>
+                    <p className="text-[#8A8F98] text-xs">Some symptoms may need a healthcare professional's advice soon.</p>
                   </div>
                   {/* HIGH */}
                   <div className="p-6 rounded-xl bg-[#140C07] border border-[#D97706] shadow-sm flex flex-col transform scale-105 z-10 relative overflow-hidden">
                      <div className="absolute top-0 left-0 w-full h-1 bg-[#D97706]" />
                     <span className="text-[#D97706] text-xs font-mono font-bold tracking-widest mb-2 uppercase flex items-center space-x-2 pt-2">
                       <span className="w-2 h-2 bg-[#D97706] rounded-full animate-pulse"></span>
-                      <span>Severity: High</span>
+                      <span>Care level: High</span>
                     </span>
-                    <h4 className="text-white font-extrabold text-2xl mb-3 leading-tight">Immediate Emergency Attention</h4>
+                    <h4 className="text-white font-extrabold text-2xl mb-3 leading-tight">Seek Urgent Help Now</h4>
                     <p className="text-[#FCD34D] text-sm leading-relaxed">{recommendation}</p>
                   </div>
                 </div>
@@ -616,29 +616,29 @@ const App = () => {
             {currentChapter === 5 && (
               <div className="w-full max-w-5xl animate-fade-in space-y-6">
                 <div className="text-center">
-                  <h2 className="text-3xl font-bold text-white tracking-tight">Authorize Physician Dispatch</h2>
+                  <h2 className="text-3xl font-bold text-white tracking-tight">Prepare a Care Summary</h2>
                 </div>
 
                 <div className="flex flex-col md:flex-row gap-6">
                   {/* Tabular Timeline */}
                   <div className="flex-1 p-6 rounded-xl bg-[#0A0B10] border border-[#1A1D24]">
-                    <div className="text-[11px] font-mono font-bold text-[#8A8F98] uppercase pb-3 border-b border-[#1A1D24] mb-4 tracking-widest">Escalation Audit Trail</div>
+                    <div className="text-[11px] font-mono font-bold text-[#8A8F98] uppercase pb-3 border-b border-[#1A1D24] mb-4 tracking-widest">Symptom Review Timeline</div>
                     <table className="w-full text-xs font-mono text-left">
                       <tbody className="divide-y divide-[#1A1D24]">
                         <tr>
                           <td className="py-3 text-[#8A8F98] w-24">14:13 UTC</td>
-                          <td className="py-3 text-[#D97706] font-bold w-28">[CRITICAL]</td>
+                          <td className="py-3 text-[#D97706] font-bold w-28">[URGENT]</td>
                           <td className="py-3 text-[#EDEDEE]">Patient message submitted to /api/chat</td>
                         </tr>
                         <tr>
                           <td className="py-3 text-[#8A8F98]">14:16 UTC</td>
-                          <td className="py-3 text-[#D97706] font-bold">[CRITICAL]</td>
+                          <td className="py-3 text-[#D97706] font-bold">[REVIEW]</td>
                           <td className="py-3 text-[#EDEDEE]">Risk score computed at {score}/100</td>
                         </tr>
                         <tr>
                           <td className="py-3 text-[#8A8F98]">14:18 UTC</td>
-                          <td className="py-3 text-[#06B6D4] font-bold">[AI CORE]</td>
-                          <td className="py-3 text-[#EDEDEE]">Triage severity designated {activeRiskLabel}</td>
+                          <td className="py-3 text-[#06B6D4] font-bold">[CARE]</td>
+                          <td className="py-3 text-[#EDEDEE]">Care level marked as {activeRiskLabel}</td>
                         </tr>
                         <tr>
                           <td className="py-3 text-[#10B981]">14:20 UTC</td>
@@ -651,9 +651,9 @@ const App = () => {
 
                   {/* Action Block */}
                   <div className="flex-1 p-8 rounded-xl bg-[#060B10] border border-[#06B6D4]/40 flex flex-col justify-center space-y-6">
-                    <span className="text-[#06B6D4] font-mono font-bold text-[11px] tracking-widest uppercase">Primary Triage Action</span>
+                    <span className="text-[#06B6D4] font-mono font-bold text-[11px] tracking-widest uppercase">Care Action</span>
                     <button onClick={handlePrimaryAction} className="w-full py-4 rounded bg-white hover:bg-[#EDEDEE] text-[#060609] font-bold text-base transition-colors shadow-sm tracking-tight">
-                      Dispatch Duty Physician →
+                      Share Summary with Care Team
                     </button>
                     {actionFeedback && <div className="p-4 rounded bg-[#0A0B10] border border-[#1A1D24] font-mono text-[11px] text-[#10B981] text-center">{actionFeedback}</div>}
                   </div>
@@ -689,25 +689,25 @@ const App = () => {
                 <div className="grid grid-cols-1 md:grid-cols-12 gap-6 items-start">
                   <div className="md:col-span-7 space-y-5 font-mono text-sm text-left">
                     <div className="p-6 rounded-xl bg-[#0A0B10] border border-[#1A1D24] shadow-sm">
-                      <span className="text-xs text-[#06B6D4] uppercase block mb-3 font-bold tracking-widest">// Operations Summary</span>
+                      <span className="text-xs text-[#06B6D4] uppercase block mb-3 font-bold tracking-widest">Care Summary</span>
                       <p className="text-[13px] text-[#D1D5DB] leading-relaxed">
                         {clinicalSummary}
                       </p>
                     </div>
                     <div className="p-6 rounded-xl bg-[#0A0B10] border border-[#1A1D24] shadow-sm">
-                      <span className="text-xs text-[#06B6D4] uppercase block mb-3 font-bold tracking-widest">// Backend Guidance</span>
+                      <span className="text-xs text-[#06B6D4] uppercase block mb-3 font-bold tracking-widest">Guidance</span>
                       <p className="text-[13px] text-[#D1D5DB] leading-relaxed">{guidance}</p>
                     </div>
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
                       <div className="p-5 rounded-xl bg-[#0A0B10] border border-[#1A1D24] shadow-sm">
-                        <span className="text-[10px] text-[#8A8F98] uppercase block mb-3 font-bold tracking-widest">Operational Insights</span>
-                        {(triageResponse?.operational_insights || ["Run live triage to populate backend operational insights."]).map((item) => (
+                        <span className="text-[10px] text-[#8A8F98] uppercase block mb-3 font-bold tracking-widest">Helpful Notes</span>
+                        {(triageResponse?.operational_insights || ["Run symptom review to populate helpful care notes."]).map((item) => (
                           <p key={item} className="text-[11px] text-[#D1D5DB] leading-relaxed mb-2">{item}</p>
                         ))}
                       </div>
                       <div className="p-5 rounded-xl bg-[#0A0B10] border border-[#1A1D24] shadow-sm">
                         <span className="text-[10px] text-[#8A8F98] uppercase block mb-3 font-bold tracking-widest">Safety Actions</span>
-                        {(triageResponse?.safety_actions || ["Safety actions will appear after backend triage completes."]).map((item) => (
+                        {(triageResponse?.safety_actions || ["Safety actions will appear after the symptom review completes."]).map((item) => (
                           <p key={item} className="text-[11px] text-[#D1D5DB] leading-relaxed mb-2">{item}</p>
                         ))}
                       </div>
@@ -728,18 +728,18 @@ const App = () => {
           {/* LOWER ZONE: HIGH-END COMPACT REPLAY DESK SCRUBBER */}
           <footer className="relative z-40 h-12 px-4 lg:px-8 border-t border-[#1A1D24] bg-[#0A0A0F] text-[11px] font-mono text-[#8A8F98] flex items-center justify-between shrink-0">
             <div className="flex items-center space-x-2">
-              <span className="text-white font-bold text-[10px] uppercase">Replay Scrubber:</span>
-              <span className="text-[10px] hidden md:inline text-[#4B5563]">// Clinical traversal synchronized natively</span>
+              <span className="text-white font-bold text-[10px] uppercase">Care Journey:</span>
+              <span className="text-[10px] hidden md:inline text-[#4B5563]">Move through intake, review, guidance, and summary</span>
             </div>
             
             <div className="flex items-center space-x-1">
               {[
                 { label: "Ch 1: Intake", prog: 0.05 },
-                { label: "Ch 2: Escalation", prog: 0.20 },
-                { label: "Ch 3: AI Triage", prog: 0.40 },
-                { label: "Ch 4: Severity", prog: 0.60 },
-                { label: "Ch 5: Dispatch", prog: 0.80 },
-                { label: "Ch 6: ICU Desk", prog: 0.98 }
+                { label: "Ch 2: Review", prog: 0.20 },
+                { label: "Ch 3: Guidance", prog: 0.40 },
+                { label: "Ch 4: Care Level", prog: 0.60 },
+                { label: "Ch 5: Care Team", prog: 0.80 },
+                { label: "Ch 6: Summary", prog: 0.98 }
               ].map((sch, i) => (
                 <button
                   key={i}

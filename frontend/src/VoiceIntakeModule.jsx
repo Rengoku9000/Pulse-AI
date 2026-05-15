@@ -21,9 +21,9 @@ const SYMPTOM_KEYWORDS = [
   "ache","sore","throat","rash","allergy","seizure","stroke","paralysis",
 ];
 const RISK_KEYWORDS = [
-  { k:"chest pain",   r:"Cardiac concern — high priority" },
+  { k:"chest pain",   r:"Chest pain may need urgent attention" },
   { k:"breathing",    r:"Respiratory distress indicator" },
-  { k:"unconscious",  r:"Critical — immediate escalation" },
+  { k:"unconscious",  r:"Unconsciousness needs emergency help" },
   { k:"stroke",       r:"Neurological emergency" },
   { k:"seizure",      r:"Neurological event detected" },
   { k:"bleed",        r:"Hemorrhagic risk indicator" },
@@ -115,10 +115,10 @@ function LiveWaveform({ stream }) {
    PROCESSING STEPS ANIMATION
 ────────────────────────────────────────────────────────── */
 const STEPS = [
-  "Analyzing multilingual intake…",
-  "Extracting symptom clusters…",
-  "Checking escalation indicators…",
-  "Generating triage synthesis…",
+  "Reading your symptom description...",
+  "Identifying symptoms you mentioned...",
+  "Checking for urgent warning signs...",
+  "Preparing safe next-step guidance...",
 ];
 function ProcessingSteps({ active }) {
   const [step, setStep] = React.useState(0);
@@ -292,10 +292,10 @@ export default function VoiceIntakeModule({
       {/* ── HEADER ───────────────────────────────────── */}
       <div style={{ textAlign: "center", marginBottom: 24 }}>
         <h1 style={{ fontSize: "clamp(22px,3vw,32px)", fontWeight: 700, color: "#fff", margin: 0, letterSpacing: "-0.02em" }}>
-          Patient Triage Intake
+          How Are You Feeling Today?
         </h1>
         <p style={{ fontSize: 13, color: dimGray, marginTop: 6 }}>
-          AI-powered multilingual voice triage — speak naturally in your language
+          Describe symptoms in your own words. PulseGuard AI will keep the guidance safe and easy to understand.
         </p>
       </div>
 
@@ -307,8 +307,8 @@ export default function VoiceIntakeModule({
 
           {/* Demographics */}
           <div style={{ ...card, padding: 20 }}>
-            <div style={{ ...mono, fontSize: 9, color: dimGray, letterSpacing: "0.12em", textTransform: "uppercase", borderBottom: "1px solid #1A1D24", paddingBottom: 8, marginBottom: 12 }}>Patient Demographics</div>
-            {[["ID","PT-7422"],["Ward","ICU-EAST"],["Age","64"],["Status","Admitting"]].map(([k,v]) => (
+            <div style={{ ...mono, fontSize: 9, color: dimGray, letterSpacing: "0.12em", textTransform: "uppercase", borderBottom: "1px solid #1A1D24", paddingBottom: 8, marginBottom: 12 }}>Visit Snapshot</div>
+            {[["Session","Demo"],["Mode","Patient"],["Language",lang.name],["Status","Ready"]].map(([k,v]) => (
               <div key={k} style={{ display:"flex", justifyContent:"space-between", ...mono, fontSize: 11, padding: "3px 0" }}>
                 <span style={{ color: dimGray }}>{k}</span>
                 <span style={{ color: k === "Status" ? cyan : "#fff", fontWeight: 600 }}>{v}</span>
@@ -338,10 +338,10 @@ export default function VoiceIntakeModule({
           {/* Symptom Extraction */}
           {extraction && (
             <div style={{ ...card, padding: 16, animation: "vi-fadein 0.5s ease" }}>
-              <div style={{ ...mono, fontSize: 9, color: cyan, letterSpacing: "0.12em", textTransform: "uppercase", marginBottom: 10 }}>AI Extraction</div>
+              <div style={{ ...mono, fontSize: 9, color: cyan, letterSpacing: "0.12em", textTransform: "uppercase", marginBottom: 10 }}>Symptoms Noted</div>
               {extraction.symptoms.length > 0 && (
                 <>
-                  <div style={{ ...mono, fontSize: 9, color: dimGray, marginBottom: 6 }}>DETECTED SYMPTOMS</div>
+                  <div style={{ ...mono, fontSize: 9, color: dimGray, marginBottom: 6 }}>Mentioned symptoms</div>
                   <div style={{ display: "flex", flexWrap: "wrap", gap: 4, marginBottom: 10 }}>
                     {extraction.symptoms.slice(0,8).map(s => (
                       <span key={s} style={{ padding: "2px 7px", borderRadius: 3, background: `${cyan}15`, border: `1px solid ${cyan}30`, color: cyan, fontSize: 9, ...mono, textTransform: "uppercase" }}>{s}</span>
@@ -351,7 +351,7 @@ export default function VoiceIntakeModule({
               )}
               {extraction.risks.length > 0 && (
                 <>
-                  <div style={{ ...mono, fontSize: 9, color: "#D97706", marginBottom: 6 }}>RISK INDICATORS</div>
+                  <div style={{ ...mono, fontSize: 9, color: "#D97706", marginBottom: 6 }}>Needs attention</div>
                   {extraction.risks.map(r => (
                     <div key={r} style={{ display: "flex", alignItems: "flex-start", gap: 6, marginBottom: 4 }}>
                       <span style={{ color: "#D97706", fontSize: 10, marginTop: 1 }}>⚠</span>
@@ -456,7 +456,7 @@ export default function VoiceIntakeModule({
                 alignItems: "center", justifyContent: "center", gap: 6,
               }}>
                 <div style={{ ...mono, fontSize: 11, color: dimGray, textAlign: "center" }}>
-                  {listening ? "Speak now — transcription will appear here…" : "Press the mic button to begin voice intake"}
+                  {listening ? "Speak now. Your words will appear here." : "Press the mic button or type your symptoms below."}
                 </div>
               </div>
             )}
@@ -465,13 +465,13 @@ export default function VoiceIntakeModule({
             {!listening && (
               <div style={{ marginTop: 10 }}>
                 <div style={{ ...mono, fontSize: 9, color: dimGray, letterSpacing: "0.1em", textTransform: "uppercase", marginBottom: 6 }}>
-                  Or type manually
+                  Or type your symptoms
                 </div>
                 <textarea
                   value={patientMessage}
                   onChange={e => { setPatientMessage(e.target.value); setTranscript(e.target.value); }}
                   rows={3}
-                  placeholder="Describe patient symptoms…"
+                  placeholder="Example: I have fever, chest pain, and trouble breathing..."
                   style={{
                     width: "100%", background: "#060609", border: "1px solid #1A1D24",
                     borderRadius: 8, padding: "10px 12px", color: "#fff", fontSize: 12,
@@ -536,7 +536,7 @@ export default function VoiceIntakeModule({
                     <span style={{ animation: "vi-pulse 0.8s ease-in-out infinite", display: "inline-block", width: 8, height: 8, borderRadius: "50%", background: "#fff" }} />
                     Analyzing…
                   </span>
-                ) : "Activate Live Triage →"}
+                ) : "Review My Symptoms"}
               </button>
             </div>
 
@@ -545,7 +545,7 @@ export default function VoiceIntakeModule({
               <div style={{ display: "flex", justifyContent: "space-between", ...mono, fontSize: 9, color: dimGray }}>
                 <span>WORDS: {(transcript || patientMessage).trim().split(/\s+/).filter(Boolean).length}</span>
                 <span style={{ color: extraction?.risks.length ? "#D97706" : "#10B981" }}>
-                  {extraction?.risks.length ? `${extraction.risks.length} RISK INDICATOR${extraction.risks.length > 1 ? "S" : ""} DETECTED` : "INTAKE READY"}
+                  {extraction?.risks.length ? `${extraction.risks.length} WARNING SIGN${extraction.risks.length > 1 ? "S" : ""} NOTED` : "READY FOR REVIEW"}
                 </span>
                 {listening && <span style={{ color: cyan }}>REC {fmtDuration(duration)}</span>}
               </div>
