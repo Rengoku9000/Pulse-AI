@@ -1,0 +1,11 @@
+fastapi
+uvicorn[standard]
+openai
+motor
+httpx
+prometheus_client
+tenacity
+pydantic
+pydantic-settings
+groq
+python-dotenv
