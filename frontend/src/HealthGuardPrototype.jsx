@@ -3,9 +3,7 @@ import { Activity, Clock } from "lucide-react";
 import CinematicIntro from "./CinematicIntro";
 import AmbientBackground from "./AmbientBackground";
 import VoiceIntakeModule from "./VoiceIntakeModule";
-import CopilotChat from "./CopilotChat";
 import ClinicalReport from "./ClinicalReport";
-import MedicalReportPreview from "./MedicalReportPreview";
 import FloatingCopilot from "./FloatingCopilot";
 
 const Icons = { Activity, Clock };
