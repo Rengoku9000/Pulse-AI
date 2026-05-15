@@ -1,0 +1,47 @@
+# render.yaml — PulseGuard AI deployment blueprint
+# Defines both services (backend + vector) in one file.
+# Render will pick this up automatically on repo connect.
+
+services:
+  # ─────────────────────────────────────────────────────────────
+  # SERVICE 1: FastAPI Triage Backend
+  # ─────────────────────────────────────────────────────────────
+  - type: web
+    name: pulseguard-backend
+    runtime: python
+    rootDir: backend
+    buildCommand: pip install -r requirements.txt
+    startCommand: uvicorn app.main:app --host 0.0.0.0 --port $PORT
+    plan: free
+    envVars:
+      - key: OPENAI_API_KEY
+        sync: false          # You will set this manually in Render dashboard
+      - key: MONGODB_URI
+        sync: false          # You will set this manually (MongoDB Atlas URI)
+      - key: VECTOR_SERVICE_URL
+        fromService:
+          name: pulseguard-vector
+          type: web
+          property: hostport   # Auto-wired to the vector service URL
+      - key: ENV
+        value: production
+      - key: OPENAI_MODEL
+        value: gpt-4o-mini
+
+  # ─────────────────────────────────────────────────────────────
+  # SERVICE 2: FAISS Vector Service
+  # ─────────────────────────────────────────────────────────────
+  - type: web
+    name: pulseguard-vector
+    runtime: python
+    rootDir: vector-service
+    buildCommand: pip install -r requirements.txt
+    startCommand: uvicorn app.main:app --host 0.0.0.0 --port $PORT
+    plan: free
+    envVars:
+      - key: OPENAI_API_KEY
+        sync: false          # Same key as backend — set manually
+      - key: OPENAI_EMBEDDING_MODEL
+        value: text-embedding-3-small
+      - key: VECTOR_DATA_DIR
+        value: /tmp/faiss    # Ephemeral — use for demo; add a Render Disk for persistence

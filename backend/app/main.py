@@ -5,6 +5,7 @@ from typing import Any
 
 import httpx
 from fastapi import FastAPI, Response
+from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import RedirectResponse
 from prometheus_client import CONTENT_TYPE_LATEST, Counter, Gauge, Histogram, generate_latest
 from pydantic import BaseModel, Field
@@ -19,6 +20,22 @@ logger = logging.getLogger(__name__)
 FALLBACK_RESPONSE = "Unable to confidently assess symptoms. Please consult a healthcare professional."
 
 app = FastAPI(title="Healthcare AI Triage Backend", version="0.2.0")
+
+# ── CORS ─────────────────────────────────────────────────────────────────────
+# Allow Vercel frontend (*.vercel.app), local dev, and any custom domain.
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=[
+        "http://localhost:5173",
+        "http://localhost:8080",
+        "https://*.vercel.app",
+        os.getenv("FRONTEND_ORIGIN", "*"),  # Set FRONTEND_ORIGIN in Render env vars
+    ],
+    allow_origin_regex=r"https://.*\.vercel\.app",
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
 # Metrics
 REQUEST_COUNT = Counter("backend_request_count", "Backend HTTP request count", ["endpoint"])
