@@ -159,6 +159,10 @@ export default function FloatingCopilot({ triageResponse, patientMessage }) {
   const [langIdx,setLangIdx]    = React.useState(0);
   const [hintIdx,setHintIdx]    = React.useState(0);
   const [showHint,setShowHint]  = React.useState(false);
+  // TTS voice state
+  const [aiSpeaking,setAiSpeaking]   = React.useState(false);
+  const [autoListen,setAutoListen]   = React.useState(false);
+  const [subtitle,setSubtitle]       = React.useState("");
 
   const bottomRef   = React.useRef(null);
   const abortRef    = React.useRef(null);
@@ -166,6 +170,7 @@ export default function FloatingCopilot({ triageResponse, patientMessage }) {
   const streamRef   = React.useRef(null);
   const thinkRef    = React.useRef(null);
   const hintTimer   = React.useRef(null);
+  const uttRef      = React.useRef(null);
 
   function ts() { return new Date().toISOString().split("T")[1].slice(0,5); }
 
@@ -198,8 +203,43 @@ export default function FloatingCopilot({ triageResponse, patientMessage }) {
   React.useEffect(()=>()=>{
     abortRef.current?.abort();
     stopMic(true);
+    stopSpeech();
     clearInterval(thinkRef.current);
   },[]);
+
+  /* ── TTS ── */
+  const stopSpeech = () => {
+    if (window.speechSynthesis) window.speechSynthesis.cancel();
+    setAiSpeaking(false); setSubtitle("");
+  };
+
+  const speakText = React.useCallback((text) => {
+    if (!window.speechSynthesis || !text) return;
+    // Strip markdown block labels for clean speech
+    const clean = text
+      .replace(/\[(OBSERVATION|RISK SIGNALS?|RECOMMENDATION|DISCLAIMER|FOLLOW.?UP)\]/gi,"")
+      .replace(/[\*_`#>]/g,"")
+      .replace(/\s+/g," ").trim()
+      .slice(0,600); // cap to keep response snappy
+    stopSpeech();
+    const utt = new SpeechSynthesisUtterance(clean);
+    // Pick the best available English voice
+    const voices = window.speechSynthesis.getVoices();
+    const preferred = voices.find(v=>/Google.*English|Microsoft.*Natural|en-IN/i.test(v.name))
+                   || voices.find(v=>v.lang.startsWith("en"))
+                   || voices[0];
+    if (preferred) utt.voice = preferred;
+    utt.rate  = 0.92; utt.pitch = 0.95; utt.volume = 1;
+    utt.onstart  = () => { setAiSpeaking(true); setSubtitle(clean); };
+    utt.onend    = () => {
+      setAiSpeaking(false); setSubtitle("");
+      // Auto-listen: restart mic after AI finishes speaking
+      if (autoListen) setTimeout(()=>toggleMic(),400);
+    };
+    utt.onerror  = () => { setAiSpeaking(false); setSubtitle(""); };
+    uttRef.current = utt;
+    window.speechSynthesis.speak(utt);
+  },[autoListen]);
 
   /* ── MIC ── */
   const stopMic = (silent=false) => {
@@ -210,19 +250,26 @@ export default function FloatingCopilot({ triageResponse, patientMessage }) {
 
   const toggleMic = async () => {
     if (listening) { stopMic(); return; }
+    // Stop AI speech when user wants to speak
+    stopSpeech();
     const SR = window.SpeechRecognition||window.webkitSpeechRecognition;
     if (!SR) { alert("Speech recognition not supported in this browser."); return; }
     let stream;
     try { stream = await navigator.mediaDevices.getUserMedia({audio:true}); streamRef.current=stream; setMicStream(stream); }
     catch { return; }
     const r = new SR();
-    r.lang = LANGS[langIdx].code; r.continuous=true; r.interimResults=false;
+    r.lang = LANGS[langIdx].code; r.continuous=true; r.interimResults=true;
     r.onresult = e => {
-      let final="";
-      for(let i=e.resultIndex;i<e.results.length;i++) if(e.results[i].isFinal) final+=e.results[i][0].transcript+" ";
-      if(final.trim()) { setInput(p=>(p+" "+final).trim()); }
+      let final="", interim="";
+      for(let i=e.resultIndex;i<e.results.length;i++){
+        if(e.results[i].isFinal) final+=e.results[i][0].transcript+" ";
+        else interim=e.results[i][0].transcript;
+      }
+      if(final.trim()) setInput(p=>(p+" "+final).trim());
+      else if(interim) setSubtitle(interim); // show interim as subtitle
     };
-    r.onerror = ()=>stopMic(true);
+    r.onend = () => { setSubtitle(""); };
+    r.onerror = ()=>{ stopMic(true); setSubtitle(""); };
     r.start(); recogRef.current=r; setListening(true);
   };
 
@@ -272,6 +319,8 @@ export default function FloatingCopilot({ triageResponse, patientMessage }) {
           }
         }
       }
+      // Speak the completed response
+      speakText(acc);
     } catch(err) {
       clearInterval(thinkRef.current); setThinking(false);
       if(err.name==="AbortError") return;
@@ -282,6 +331,7 @@ export default function FloatingCopilot({ triageResponse, patientMessage }) {
         const base=p.some(m=>m.id===aiId)?p.filter(m=>m.id!==aiId):p;
         return [...base,{id:aiId,sender:"ai",text:fallback,time:ts()}];
       });
+      speakText("I'm having trouble connecting right now. Please check your network.");
     } finally {
       setStreaming(false); setStreamId(null);
     }
@@ -295,9 +345,11 @@ export default function FloatingCopilot({ triageResponse, patientMessage }) {
       <style>{`
         @keyframes fc-blink{0%,49%{opacity:1}50%,100%{opacity:0}}
         @keyframes fc-orb{0%,100%{box-shadow:0 0 0 0 rgba(0,209,255,0.3),0 4px 24px rgba(0,0,0,0.5)}50%{box-shadow:0 0 0 10px rgba(0,209,255,0),0 4px 24px rgba(0,0,0,0.5)}}
+        @keyframes fc-orb-speak{0%,100%{box-shadow:0 0 0 0 rgba(16,185,129,0.5),0 4px 24px rgba(0,0,0,0.5)}50%{box-shadow:0 0 0 14px rgba(16,185,129,0),0 4px 24px rgba(0,0,0,0.5)}}
         @keyframes fc-open{from{opacity:0;transform:scale(0.88) translateY(16px)}to{opacity:1;transform:scale(1) translateY(0)}}
         @keyframes fc-hint{0%{opacity:0;transform:translateY(4px)}15%,85%{opacity:1;transform:translateY(0)}100%{opacity:0}}
         @keyframes fc-dot{0%,80%,100%{transform:scale(0.6);opacity:0.4}40%{transform:scale(1);opacity:1}}
+        @keyframes fc-wave{0%,100%{transform:scaleY(0.3)}50%{transform:scaleY(1)}}
         .fc-scroll::-webkit-scrollbar{width:3px}
         .fc-scroll::-webkit-scrollbar-thumb{background:#1C2333;border-radius:2px}
       `}</style>
@@ -318,22 +370,35 @@ export default function FloatingCopilot({ triageResponse, patientMessage }) {
 
       {/* ── FLOATING ORB ── */}
       <button
-        onClick={()=>setOpen(o=>!o)}
+        onClick={()=>{ stopSpeech(); setOpen(o=>!o); }}
         aria-label="Open AI Copilot"
         style={{
           position:"fixed",bottom:24,right:24,zIndex:999,
           width:56,height:56,borderRadius:"50%",border:"none",cursor:"pointer",
-          background:"linear-gradient(135deg,#00D1FF22,#10B98122)",
+          background: aiSpeaking
+            ? "linear-gradient(135deg,#10B98130,#00D1FF18)"
+            : "linear-gradient(135deg,#00D1FF22,#10B98122)",
           backdropFilter:"blur(12px)",
-          outline:`1px solid ${C.cyan}40`,
+          outline:`1px solid ${aiSpeaking ? C.em : C.cyan}40`,
           display:"flex",alignItems:"center",justifyContent:"center",
-          animation:"fc-orb 2.4s ease-in-out infinite",
-          transition:"transform 0.2s ease",
+          animation: aiSpeaking ? "fc-orb-speak 1.2s ease-in-out infinite" : "fc-orb 2.4s ease-in-out infinite",
+          transition:"background 0.4s ease, transform 0.2s ease",
         }}
         onMouseEnter={e=>e.currentTarget.style.transform="scale(1.1)"}
         onMouseLeave={e=>e.currentTarget.style.transform="scale(1)"}
       >
-        {open ? (
+        {/* Animated bars when AI speaking */}
+        {aiSpeaking && !open ? (
+          <div style={{display:"flex",alignItems:"center",gap:2}}>
+            {[0,1,2,3,4].map(i=>(
+              <div key={i} style={{
+                width:3,height:16,borderRadius:2,background:C.em,
+                animation:`fc-wave 0.8s ${i*0.1}s ease-in-out infinite`,
+                transformOrigin:"center",
+              }}/>
+            ))}
+          </div>
+        ) : open ? (
           <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
             <path d="M18 6L6 18M6 6l12 12" stroke={C.cyan} strokeWidth="2" strokeLinecap="round"/>
           </svg>
@@ -342,8 +407,7 @@ export default function FloatingCopilot({ triageResponse, patientMessage }) {
             <path d="M22 12h-4l-3 9L9 3l-3 9H2" stroke={C.cyan} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
           </svg>
         )}
-        {/* Notification dot when triage completes */}
-        {triageResponse && !open && (
+        {triageResponse && !open && !aiSpeaking && (
           <span style={{position:"absolute",top:4,right:4,width:10,height:10,borderRadius:"50%",background:"#10B981",border:"2px solid #070B11"}}/>
         )}
       </button>
@@ -364,14 +428,28 @@ export default function FloatingCopilot({ triageResponse, patientMessage }) {
             background:"linear-gradient(180deg,#0D1117,#070B11)",
             display:"flex",alignItems:"center",justifyContent:"space-between"}}>
             <div style={{display:"flex",alignItems:"center",gap:10}}>
-              <div style={{width:8,height:8,borderRadius:"50%",background:"#10B981",boxShadow:"0 0 6px #10B98180"}}/>
+              <div style={{
+                width:8,height:8,borderRadius:"50%",
+                background: aiSpeaking ? C.em : "#10B981",
+                boxShadow: aiSpeaking ? `0 0 10px ${C.em}` : "0 0 6px #10B98180",
+                transition:"all 0.3s",
+              }}/>
               <div>
                 <div style={{fontFamily:"monospace",fontSize:11,fontWeight:700,color:"#fff",letterSpacing:"0.06em"}}>Intelligence Copilot</div>
-                <div style={{fontFamily:"monospace",fontSize:8,color:C.dim}}>PulseGuard AI · {LANGS[langIdx].name}</div>
+                <div style={{fontFamily:"monospace",fontSize:8,color: aiSpeaking ? C.em : C.dim}}>
+                  {aiSpeaking ? "● SPEAKING" : `PulseGuard AI · ${LANGS[langIdx].name}`}
+                </div>
               </div>
             </div>
-            {/* Lang selector */}
-            <div style={{display:"flex",gap:4}}>
+            <div style={{display:"flex",gap:6,alignItems:"center"}}>
+              {/* Auto-listen toggle */}
+              <button onClick={()=>setAutoListen(a=>!a)} title="Auto-listen after AI speaks" style={{
+                padding:"2px 7px",borderRadius:4,fontSize:8,fontFamily:"monospace",cursor:"pointer",
+                border:`1px solid ${autoListen?C.em:C.border}`,
+                background:autoListen?`${C.em}15`:"transparent",
+                color:autoListen?C.em:C.dim,
+              }}>AUTO</button>
+              {/* Lang selector */}
               {LANGS.map((l,i)=>(
                 <button key={l.code} onClick={()=>setLangIdx(i)} style={{
                   padding:"2px 6px",borderRadius:4,border:`1px solid ${i===langIdx?C.cyan:C.border}`,
@@ -412,11 +490,30 @@ export default function FloatingCopilot({ triageResponse, patientMessage }) {
             <div ref={bottomRef}/>
           </div>
 
+          {/* AI Speaking strip */}
+          {aiSpeaking && (
+            <div style={{padding:"8px 14px",borderTop:`1px solid ${C.em}30`,background:"#060D09",display:"flex",alignItems:"center",gap:10,flexShrink:0}}>
+              <div style={{display:"flex",alignItems:"center",gap:3}}>
+                {[0,1,2,3,4].map(i=>(
+                  <div key={i} style={{
+                    width:3,height:14,borderRadius:2,background:C.em,
+                    animation:`fc-wave 0.9s ${i*0.1}s ease-in-out infinite`,
+                    transformOrigin:"center",
+                  }}/>
+                ))}
+              </div>
+              <span style={{fontFamily:"monospace",fontSize:8,color:C.em,fontWeight:700,letterSpacing:"0.1em"}}>AI SPEAKING</span>
+              <span style={{fontFamily:"monospace",fontSize:9,color:"#D1D5DB",flex:1,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap",opacity:0.8}}>{subtitle}</span>
+              <button onClick={stopSpeech} style={{background:"transparent",border:`1px solid ${C.em}40`,borderRadius:4,color:C.em,fontSize:8,fontFamily:"monospace",cursor:"pointer",padding:"2px 6px"}}>STOP</button>
+            </div>
+          )}
+
           {/* Voice waveform strip */}
           {listening && (
             <div style={{padding:"6px 14px",borderTop:`1px solid ${C.border}`,background:"#060609",display:"flex",alignItems:"center",gap:10,flexShrink:0}}>
               <span style={{fontFamily:"monospace",fontSize:8,color:C.cyan,animation:"fc-blink 1s steps(1) infinite"}}>● LISTENING</span>
               <Waveform stream={micStream} active={listening}/>
+              {subtitle && <span style={{fontFamily:"monospace",fontSize:9,color:C.muted,flex:1,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{subtitle}</span>}
               <span style={{fontFamily:"monospace",fontSize:8,color:C.dim,marginLeft:"auto"}}>{LANGS[langIdx].name}</span>
             </div>
           )}
