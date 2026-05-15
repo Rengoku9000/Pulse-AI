@@ -193,29 +193,62 @@ const App = () => {
     return () => window.removeEventListener('wheel', handleWheel);
   }, [autoScrollIntervalId]);
 
-  // Scroll traversal executor
+  // ── Scroll executor ────────────────────────────────────────────────────────
   const scrollToChapterOffset = (targetProgress) => {
     const maxScroll = document.documentElement.scrollHeight - window.innerHeight;
-    const targetY = maxScroll * targetProgress;
-    window.scrollTo({ top: targetY, behavior: 'smooth' });
+    window.scrollTo({ top: maxScroll * targetProgress, behavior: 'smooth' });
   };
 
+  // ── Cinematic autopilot: Ch3 → Ch4 → Ch5 → Ch6 ────────────────────────────
+  // Called after triage response arrives. Returns a cleanup function.
+  const autopilotRef = React.useRef([]);
+
+  const clearAutopilot = () => {
+    autopilotRef.current.forEach(clearTimeout);
+    autopilotRef.current = [];
+  };
+
+  const launchAutopilot = () => {
+    clearAutopilot();
+    // Chapter progression targets and dwell times
+    const stages = [
+      { progress: 0.38, dwell: 2800 },  // Ch3 — AI Triage Activation (show reasoning cards)
+      { progress: 0.60, dwell: 2400 },  // Ch4 — Risk Assessment (show severity tiers)
+      { progress: 0.80, dwell: 2200 },  // Ch5 — Physician Escalation (show timeline)
+      { progress: 0.98, dwell: 0    },  // Ch6 — ICU Command Center (final)
+    ];
+    let cumulative = 0;
+    stages.forEach(({ progress, dwell }, i) => {
+      const t = setTimeout(() => scrollToChapterOffset(progress), cumulative);
+      autopilotRef.current.push(t);
+      cumulative += dwell;
+      // Dismiss the processing overlay once we reach Ch4 (reasoning is visible)
+      if (i === 1) {
+        const t2 = setTimeout(() => {
+          setTriageProcessing(false);
+          clearInterval(processStepRef.current);
+        }, cumulative - dwell + 800);
+        autopilotRef.current.push(t2);
+      }
+    });
+  };
+
+  // ── Triage submission ────────────────────────────────────────────────────────
   const submitTriage = async () => {
     setTriageLoading(true);
     setTriageError("");
-    // Show AI processing overlay immediately — never show black screen
+    // Phase 1: show overlay + scroll to Ch3 immediately — no black screen
     setTriageProcessing(true);
     setProcessStep(0);
-    processStepRef.current = setInterval(() =>
-      setProcessStep(s => (s < 3 ? s + 1 : s)), 900
+    processStepRef.current = setInterval(
+      () => setProcessStep(s => (s < 3 ? s + 1 : s)), 950
     );
-    // Start scrolling toward Chapter 3 so the user sees the AI analysis flow
-    scrollToChapterOffset(0.35);
+    scrollToChapterOffset(0.38);
     try {
       const res = await fetch(`${API_URL}/chat`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ session_id: "pulseguard-ui", message: patientMessage }),
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ session_id: 'pulseguard-ui', message: patientMessage }),
       });
       if (!res.ok) throw new Error(`Request failed with ${res.status}`);
       const data = await res.json();
@@ -225,25 +258,26 @@ const App = () => {
         { id: Date.now(), time: timeStr, text: `Symptom review completed: ${data.risk_level}`, type: data.emergency_score >= 70 ? 'warn' : 'success' },
         ...f,
       ]);
-      // After response: briefly hold on Chapter 3 (AI reasoning), then advance to Chapter 6
-      setTimeout(() => {
-        setTriageProcessing(false);
-        clearInterval(processStepRef.current);
-        scrollToChapterOffset(0.98);
-      }, 1400);
+      // Phase 2: launch cinematic chapter progression Ch3 → Ch4 → Ch5 → Ch6
+      launchAutopilot();
     } catch (err) {
-      setTriageError("Unable to review symptoms right now. Please try again, or consult a healthcare professional if symptoms feel urgent.");
+      setTriageError('Unable to review symptoms right now. Please try again, or consult a healthcare professional if symptoms feel urgent.');
       setTriageProcessing(false);
       clearInterval(processStepRef.current);
-      // Don't leave user on black screen — scroll back to intake
-      scrollToChapterOffset(0.05);
+      scrollToChapterOffset(0.05);  // return to intake — never leave user on blank screen
     } finally {
       setTriageLoading(false);
     }
   };
 
-  // Cleanup interval on unmount
-  React.useEffect(() => () => clearInterval(processStepRef.current), []);
+  // Cleanup all timers on unmount
+  React.useEffect(() => () => {
+    clearAutopilot();
+    clearInterval(processStepRef.current);
+  }, []); // eslint-disable-line
+
+  // Allow user wheel to interrupt autopilot
+  // (existing wheel handler already clears autoScrollIntervalId, autopilot timers are self-contained)
 
   // Execute remediation action with luxury sinusoidal easing traversal
   const handlePrimaryAction = () => {
@@ -809,106 +843,88 @@ const App = () => {
         />
       )}
 
-      {/* ── AI PROCESSING OVERLAY — prevents black screen during triage call ── */}
+      {/* ── AI ANALYSIS BANNER — slim, non-blocking, shows during triage call ── */}
       {triageProcessing && (
         <div style={{
-          position: 'fixed', inset: 0, zIndex: 800,
-          background: 'rgba(7,11,17,0.92)', backdropFilter: 'blur(12px)',
-          display: 'flex', alignItems: 'center', justifyContent: 'center',
-          animation: 'fadeIn 0.3s ease',
+          position: 'fixed', bottom: 48, left: '50%', transform: 'translateX(-50%)',
+          zIndex: 850, width: 'min(520px, 92vw)',
+          background: 'rgba(7,11,17,0.96)', backdropFilter: 'blur(16px)',
+          border: '1px solid #00D1FF30', borderRadius: 14,
+          padding: '14px 20px',
+          boxShadow: '0 8px 40px rgba(0,0,0,0.5), 0 0 0 1px rgba(0,209,255,0.08)',
+          animation: 'ai-banner-in 0.35s cubic-bezier(0.16,1,0.3,1)',
         }}>
           <style>{`
-            @keyframes fadeIn { from{opacity:0} to{opacity:1} }
-            @keyframes scan { 0%{transform:translateY(-100%)} 100%{transform:translateY(100vh)} }
-            @keyframes pulse-ring { 0%,100%{opacity:0.2;transform:scale(1)} 50%{opacity:0.6;transform:scale(1.12)} }
+            @keyframes ai-banner-in { from{opacity:0;transform:translateX(-50%) translateY(16px)} to{opacity:1;transform:translateX(-50%) translateY(0)} }
+            @keyframes ai-pulse-dot { 0%,100%{opacity:0.3} 50%{opacity:1} }
           `}</style>
-          {/* Scan line */}
-          <div style={{
-            position: 'absolute', inset: 0, overflow: 'hidden', pointerEvents: 'none',
-          }}>
-            <div style={{
-              position: 'absolute', left: 0, right: 0, height: 1,
-              background: 'linear-gradient(90deg,transparent,#00D1FF60,transparent)',
-              animation: 'scan 2.8s linear infinite',
-            }} />
-          </div>
 
-          <div style={{ textAlign: 'center', maxWidth: 420, padding: '0 24px' }}>
-            {/* Pulsing logo ring */}
-            <div style={{ position: 'relative', width: 72, height: 72, margin: '0 auto 28px' }}>
-              <div style={{
-                position: 'absolute', inset: -12, borderRadius: '50%',
-                border: '1px solid #00D1FF30',
-                animation: 'pulse-ring 2s ease-in-out infinite',
-              }} />
-              <div style={{
-                width: 72, height: 72, borderRadius: '50%',
-                background: 'linear-gradient(135deg,#00D1FF15,#10B98115)',
-                border: '1px solid #00D1FF40',
-                display: 'flex', alignItems: 'center', justifyContent: 'center',
-              }}>
-                <svg width="28" height="28" viewBox="0 0 24 24" fill="none">
-                  <path d="M22 12h-4l-3 9L9 3l-3 9H2" stroke="#00D1FF" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-                </svg>
-              </div>
+          {/* Top row: label + live step */}
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 10 }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none">
+                <path d="M22 12h-4l-3 9L9 3l-3 9H2" stroke="#00D1FF" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+              </svg>
+              <span style={{ fontFamily: 'monospace', fontSize: 9, fontWeight: 700,
+                color: '#00D1FF', letterSpacing: '0.16em', textTransform: 'uppercase' }}>
+                PulseGuard AI · Clinical Analysis
+              </span>
             </div>
-
-            <div style={{ fontFamily: 'monospace', fontSize: 10, color: '#00D1FF',
-              letterSpacing: '0.2em', textTransform: 'uppercase', marginBottom: 8 }}>
-              PulseGuard AI · Clinical Analysis
-            </div>
-            <div style={{ fontSize: 22, fontWeight: 700, color: '#fff', marginBottom: 28, letterSpacing: '-0.02em' }}>
-              Analyzing Your Symptoms
-            </div>
-
-            {/* Steps */}
-            <div style={{ textAlign: 'left', marginBottom: 24 }}>
-              {[
-                'Extracting symptom patterns…',
-                'Retrieving medical context…',
-                'Assessing escalation risk…',
-                'Generating care guidance…',
-              ].map((step, i) => (
+            <div style={{ display: 'flex', alignItems: 'center', gap: 5 }}>
+              {[0,1,2].map(i => (
                 <div key={i} style={{
-                  display: 'flex', alignItems: 'center', gap: 10, padding: '6px 0',
-                  opacity: i <= processStep ? 1 : 0.25,
-                  transition: 'opacity 0.5s ease',
-                  color: i < processStep ? '#10B981' : i === processStep ? '#00D1FF' : '#4B5A6E',
-                  fontFamily: 'monospace', fontSize: 12,
-                }}>
-                  <div style={{ width: 16, height: 16, borderRadius: '50%', flexShrink: 0,
-                    background: i < processStep ? '#10B981' : i === processStep ? '#00D1FF20' : 'transparent',
-                    border: `1px solid ${i < processStep ? '#10B981' : i === processStep ? '#00D1FF' : '#1C2333'}`,
-                    display: 'flex', alignItems: 'center', justifyContent: 'center',
-                  }}>
-                    {i < processStep && <span style={{ fontSize: 8, color: '#060609' }}>✓</span>}
-                    {i === processStep && <span style={{ width: 6, height: 6, borderRadius: '50%', background: '#00D1FF', display: 'block' }} />}
-                  </div>
-                  <span>{step}</span>
-                  {i === processStep && (
-                    <span style={{ marginLeft: 'auto', fontSize: 9, color: '#00D1FF', letterSpacing: '0.1em' }}>
-                      ACTIVE
-                    </span>
-                  )}
-                </div>
+                  width: 5, height: 5, borderRadius: '50%', background: '#00D1FF',
+                  animation: `ai-pulse-dot 1.2s ${i*0.2}s ease-in-out infinite`,
+                }} />
               ))}
             </div>
+          </div>
 
-            {/* Progress bar */}
-            <div style={{ height: 2, background: '#1C2333', borderRadius: 1, overflow: 'hidden' }}>
-              <div style={{
-                height: '100%', borderRadius: 1,
-                background: 'linear-gradient(90deg,#00D1FF,#10B981)',
-                width: `${(processStep / 3) * 100}%`,
-                transition: 'width 0.8s cubic-bezier(0.16,1,0.3,1)',
-              }} />
-            </div>
-            <div style={{ fontFamily: 'monospace', fontSize: 9, color: '#4B5A6E', marginTop: 10 }}>
-              Safe · Medically grounded · AI-powered
-            </div>
+          {/* Step list */}
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '3px 16px' }}>
+            {[
+              'Extracting symptom patterns',
+              'Retrieving medical context',
+              'Assessing escalation risk',
+              'Generating care guidance',
+            ].map((step, i) => (
+              <div key={i} style={{
+                display: 'flex', alignItems: 'center', gap: 7,
+                opacity: i <= processStep ? 1 : 0.28,
+                transition: 'opacity 0.45s ease',
+                padding: '3px 0',
+                fontFamily: 'monospace', fontSize: 10,
+                color: i < processStep ? '#10B981' : i === processStep ? '#00D1FF' : '#4B5A6E',
+              }}>
+                <div style={{
+                  width: 12, height: 12, borderRadius: '50%', flexShrink: 0,
+                  border: `1px solid ${i < processStep ? '#10B981' : i === processStep ? '#00D1FF' : '#1C2333'}`,
+                  background: i < processStep ? '#10B981' : 'transparent',
+                  display: 'flex', alignItems: 'center', justifyContent: 'center',
+                }}>
+                  {i < processStep
+                    ? <span style={{ fontSize: 7, color: '#060609', lineHeight: 1 }}>✓</span>
+                    : i === processStep
+                      ? <span style={{ width: 4, height: 4, borderRadius: '50%', background: '#00D1FF', display: 'block' }} />
+                      : null}
+                </div>
+                <span>{step}</span>
+              </div>
+            ))}
+          </div>
+
+          {/* Progress bar */}
+          <div style={{ marginTop: 12, height: 2, background: '#1C2333', borderRadius: 1, overflow: 'hidden' }}>
+            <div style={{
+              height: '100%', borderRadius: 1,
+              background: 'linear-gradient(90deg, #00D1FF, #10B981)',
+              width: `${Math.round((processStep / 3) * 100)}%`,
+              transition: 'width 0.9s cubic-bezier(0.16,1,0.3,1)',
+            }} />
           </div>
         </div>
       )}
+
 
     </div>
   );
