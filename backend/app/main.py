@@ -254,3 +254,90 @@ async def chat(payload: ChatRequest) -> ChatResponse:
     finally:
         ACTIVE_SESSIONS.dec()
         API_LATENCY.labels("/chat").observe(time.perf_counter() - start)
+
+
+# ── /copilot — Streaming SSE conversational endpoint ─────────────────────────
+from fastapi.responses import StreamingResponse as FastAPIStreamingResponse
+
+COPILOT_SYSTEM_PROMPT = """You are PulseGuard AI, an advanced clinical intelligence copilot designed to assist healthcare staff with patient triage, symptom assessment, and escalation decisions.
+
+Your capabilities:
+- Analyze patient symptoms and identify risk signals
+- Ask intelligent follow-up questions about duration, severity, onset, and context
+- Assess escalation urgency using structured clinical reasoning
+- Support multilingual patient intake (English, Hindi, Kannada, Tamil, Telugu)
+- Provide structured responses with clear sections
+
+Your constraints (CRITICAL - never violate):
+- NEVER provide a definitive medical diagnosis
+- NEVER prescribe specific medications or dosages
+- ALWAYS recommend physician consultation for serious symptoms
+- ALWAYS use probabilistic language ("may indicate", "could suggest", "warrants evaluation")
+- ALWAYS include a safety disclaimer for high-risk presentations
+- ALWAYS escalate when symptoms suggest cardiac, neurological, or respiratory emergencies
+
+Response format (use these headers when appropriate):
+[OBSERVATION] — What you notice from the symptoms
+[RISK SIGNALS] — Specific concerning indicators
+[FOLLOW-UP] — Questions to gather more clinical context
+[RECOMMENDATION] — Suggested next steps
+[DISCLAIMER] — Safety and liability statement
+
+Tone: calm, professional, clinically precise, supportive."""
+
+
+class CopilotRequest(BaseModel):
+    history: list[dict] = []
+    context_note: str = ""
+    system_hint: str = ""
+
+
+@app.post("/copilot")
+async def copilot_stream(payload: CopilotRequest):
+    """Real-time streaming AI copilot with conversation memory."""
+    REQUEST_COUNT.labels("/copilot").inc()
+
+    messages = [{"role": "system", "content": COPILOT_SYSTEM_PROMPT}]
+
+    # Inject triage context as a system note if provided
+    if payload.context_note:
+        messages.append({
+            "role": "system",
+            "content": f"Current session context: {payload.context_note}"
+        })
+
+    # Append conversation history (last 12 messages max)
+    for msg in payload.history[-12:]:
+        if msg.get("role") in ("user", "assistant") and msg.get("content"):
+            messages.append({"role": msg["role"], "content": msg["content"]})
+
+    async def token_stream():
+        try:
+            client = llm_provider.openai_client
+            stream = await client.chat.completions.create(
+                model=settings.openai_model,
+                messages=messages,
+                temperature=0.3,
+                max_tokens=600,
+                stream=True,
+            )
+            async for chunk in stream:
+                delta = chunk.choices[0].delta.content if chunk.choices else None
+                if delta:
+                    # SSE format
+                    yield f"data: {delta}\n\n"
+            yield "data: [DONE]\n\n"
+        except Exception as e:
+            logger.error(f"Copilot stream error: {e}")
+            yield f"data: [ERROR] {str(e)}\n\n"
+            yield "data: [DONE]\n\n"
+
+    return FastAPIStreamingResponse(
+        token_stream(),
+        media_type="text/event-stream",
+        headers={
+            "Cache-Control": "no-cache",
+            "X-Accel-Buffering": "no",  # Disable Nginx buffering for true streaming
+        },
+    )
+

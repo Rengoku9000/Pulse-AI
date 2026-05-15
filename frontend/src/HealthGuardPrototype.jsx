@@ -3,6 +3,7 @@ import { Activity, Clock } from "lucide-react";
 import CinematicIntro from "./CinematicIntro";
 import AmbientBackground from "./AmbientBackground";
 import VoiceIntakeModule from "./VoiceIntakeModule";
+import CopilotChat from "./CopilotChat";
 
 const Icons = { Activity, Clock };
 const API_URL = import.meta.env.VITE_API_URL || "/api";
@@ -252,20 +253,6 @@ const App = () => {
     setActionFeedback(`Clinical note recorded: ${label}. Risk telemetry streams continuing to buffer.`);
   };
 
-  const runCopilotQuery = (query) => {
-    setChatMessages(prev => [...prev, { id: Date.now(), sender: 'user', text: query }]);
-    setAiThinking(true);
-    setTimeout(() => {
-      setAiThinking(false);
-      let reply = triageResponse
-        ? `${triageResponse.assistant_name}: ${triageResponse.clinical_summary} ${triageResponse.disclaimer}`
-        : "Submit symptoms first so I can answer from the live backend triage result.";
-      if (triageResponse && query.toLowerCase().includes('rag')) reply = `Retrieved ${ragChunks} RAG context chunk(s): ${triageResponse.retrieved_context?.join(' | ') || 'none returned'}.`;
-      else if (triageResponse && (query.toLowerCase().includes('risk') || query.toLowerCase().includes('score'))) reply = `Risk score is ${score}/100. Backend risk level: ${triageResponse.risk_level}. Care pathway: ${triageResponse.topology_stage}.`;
-      else if (triageResponse && query.toLowerCase().includes('action')) reply = triageResponse.safety_actions?.join(' ') || recommendation;
-      setChatMessages(prev => [...prev, { id: Date.now() + 1, sender: 'ai', text: reply }]);
-    }, 600);
-  };
 
   // ---------------------------------------------------------
   // CLINICAL DICTIONARY & METRICS
@@ -727,23 +714,11 @@ const App = () => {
                     </div>
                   </div>
 
-                  <div className="md:col-span-5 rounded-xl bg-[#0A0B10] border border-[#1A1D24] p-5 flex flex-col h-[280px] text-left shadow-sm">
-                    <span className="text-[11px] font-mono text-white font-bold pb-3 border-b border-[#1A1D24] flex items-center justify-between mb-3 uppercase tracking-widest">
-                      <span>Intelligence Copilot</span>
-                      <span className="text-[10px] text-[#10B981] font-normal">● Secure Network</span>
-                    </span>
-                    <div className="flex-1 overflow-y-auto space-y-3 py-2 font-mono text-[11px]">
-                      {chatMessages.map((m) => (
-                        <div key={m.id} className={`p-3 rounded-lg leading-relaxed break-words ${m.sender === 'user' ? 'bg-[#1C1E25] text-white ml-auto max-w-[85%]' : 'bg-[#060609] text-[#8A8F98] border border-[#1A1D24]'}`}>
-                          {m.text}
-                        </div>
-                      ))}
-                      {aiThinking && <div className="text-[10px] text-[#06B6D4] italic pl-2">Synthesizing telemetry arrays...</div>}
-                    </div>
-                    <div className="pt-3 border-t border-[#1A1D24] flex items-center space-x-3 font-mono mt-2">
-                      <span className="text-[#06B6D4] text-[13px] font-bold">&gt;</span>
-                      <input type="text" placeholder="Query patient telemetry metrics..." value={chatInput} onChange={(e) => setChatInput(e.target.value)} onKeyDown={(e) => { if (e.key === 'Enter' && chatInput.trim()) { runCopilotQuery(chatInput.trim()); setChatInput(''); } }} className="flex-1 bg-transparent text-[11px] text-white placeholder-[#8A8F98] focus:outline-none" />
-                    </div>
+                  <div className="md:col-span-5 rounded-xl overflow-hidden" style={{ height: 380 }}>
+                    <CopilotChat
+                      triageResponse={triageResponse}
+                      patientMessage={patientMessage}
+                    />
                   </div>
                 </div>
               </div>
