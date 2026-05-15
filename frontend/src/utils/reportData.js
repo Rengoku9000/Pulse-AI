@@ -69,6 +69,9 @@ export function buildMedicalReport({ triageResponse, patientMessage, patientDeta
     },
     symptoms,
     reportedSymptoms: reportedSymptoms.length ? reportedSymptoms : [symptoms],
+    finalAiSummary:
+      triageResponse?.guidance ||
+      "Final AI guidance is not available yet.",
     analysisSummary:
       triageResponse?.clinical_summary ||
       triageResponse?.guidance ||

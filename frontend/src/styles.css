@@ -329,6 +329,22 @@ button:disabled {
   border-radius: 6px;
 }
 
+.final-summary-card {
+  margin-bottom: 14px;
+  border-color: #99f6e4;
+  background: linear-gradient(180deg, #f0fdfa 0%, #ffffff 88%);
+}
+
+.final-summary-card h3 {
+  color: #0f766e;
+}
+
+.final-summary-card p {
+  color: #0f172a;
+  font-size: 14px;
+  font-weight: 700;
+}
+
 .report-list {
   margin: 0;
   padding-left: 18px;

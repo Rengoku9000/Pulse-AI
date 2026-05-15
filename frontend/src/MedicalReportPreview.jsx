@@ -175,9 +175,14 @@ export default function MedicalReportPreview({ triageResponse, patientMessage })
             <p className="symptom-box">{report.symptoms}</p>
           </section>
 
+          <section className="report-card final-summary-card">
+            <h3>Final AI Summary</h3>
+            <p>{report.finalAiSummary}</p>
+          </section>
+
           <section className="report-grid two">
             <div className="report-card">
-              <h3>AI Analysis Summary</h3>
+              <h3>Supporting Analysis Summary</h3>
               <p>{report.analysisSummary}</p>
             </div>
             <div className="report-card">
