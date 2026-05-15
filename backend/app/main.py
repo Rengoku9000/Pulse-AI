@@ -65,9 +65,20 @@ class ChatResponse(BaseModel):
     safety_actions: list[str]
     telemetry: dict[str, Any]
 
-# MongoDB Client
-mongo_client = AsyncIOMotorClient(settings.mongodb_uri)
-db = mongo_client.get_default_database()
+
+# ── MongoDB Client (lazy — does NOT connect at import time) ──────────────────
+# Motor connections are lazy by default; get_default_database() is deferred
+# to the first actual DB operation so startup never crashes on DB issues.
+mongo_client = AsyncIOMotorClient(
+    settings.mongodb_uri,
+    serverSelectionTimeoutMS=5000,   # 5s timeout instead of hanging forever
+)
+try:
+    db = mongo_client.get_default_database()
+except Exception:
+    # URI has no database name — fall back to explicit name
+    db = mongo_client["healthcare_ai"]
+
 
 def calculate_emergency_score(message: str) -> int:
     high_risk = ["chest pain", "trouble breathing", "stroke", "severe bleeding", "unconscious", "suicidal"]
