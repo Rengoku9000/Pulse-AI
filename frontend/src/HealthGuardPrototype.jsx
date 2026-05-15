@@ -54,18 +54,11 @@ const App = () => {
   const [triageError, setTriageError] = React.useState("");
   
   // Enterprise Copilot State
-  const [chatInput, setChatInput] = React.useState('');
-  const [aiThinking, setAiThinking] = React.useState(false);
   const [showReport, setShowReport] = React.useState(false);
-  const [showMedReport, setShowMedReport] = React.useState(false);
   // AI Processing overlay — shown during backend triage call
   const [triageProcessing, setTriageProcessing] = React.useState(false);
   const [processStep, setProcessStep] = React.useState(0);
   const processStepRef = React.useRef(null);
-  
-  const [chatMessages, setChatMessages] = React.useState([
-    { id: 1, sender: 'ai', text: 'PulseGuard AI is ready. Tell me what you are feeling, and I will help guide the next safe step.' }
-  ]);
 
   // Production Event logs arrays
   const [eventFeed, setEventFeed] = React.useState([
@@ -142,10 +135,6 @@ const App = () => {
       ...prev.slice(-5),
       { id: Date.now(), time: timeNow, text: `Symptom review completed: ${triageResponse.risk_level} at ${triageResponse.emergency_score}/100.`, label: score >= 70 ? "[URGENT]" : score >= 30 ? "[REVIEW]" : "[CARE]" },
       { id: Date.now() + 1, time: timeNow, text: `Medical context used: ${triageResponse.telemetry?.rag_context_chunks ?? 0} references. Language: ${triageResponse.language}.`, label: "[INFO]" },
-    ]);
-    setChatMessages(prev => [
-      ...prev,
-      { id: Date.now() + 2, sender: 'ai', text: triageResponse.clinical_summary },
     ]);
   }, [triageResponse, score]);
 
