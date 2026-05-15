@@ -4,6 +4,7 @@ import CinematicIntro from "./CinematicIntro";
 import AmbientBackground from "./AmbientBackground";
 import VoiceIntakeModule from "./VoiceIntakeModule";
 import CopilotChat from "./CopilotChat";
+import MedicalReportPreview from "./MedicalReportPreview";
 
 const Icons = { Activity, Clock };
 const API_URL = import.meta.env.VITE_API_URL || "/api";
@@ -209,7 +210,7 @@ const App = () => {
         { id: Date.now(), time: timeStr, text: `Symptom review completed: ${data.risk_level}`, type: data.emergency_score >= 70 ? 'warn' : 'success' },
         ...f,
       ]);
-      scrollToChapterOffset(data.emergency_score >= 70 ? 0.4 : data.emergency_score >= 30 ? 0.28 : 0.98);
+      scrollToChapterOffset(0.98);
     } catch (err) {
       setTriageError("Unable to review symptoms right now. Please try again, or consult a healthcare professional if symptoms feel urgent.");
     } finally {
@@ -721,6 +722,13 @@ const App = () => {
                     />
                   </div>
                 </div>
+
+                {triageResponse && (
+                  <MedicalReportPreview
+                    triageResponse={triageResponse}
+                    patientMessage={patientMessage}
+                  />
+                )}
               </div>
             )}
           </main>

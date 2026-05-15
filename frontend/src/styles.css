@@ -51,3 +51,453 @@ button:disabled {
 ::-webkit-scrollbar-thumb:hover {
   background: rgba(6, 182, 212, 0.4);
 }
+
+.report-shell {
+  width: 100%;
+  max-width: 1100px;
+  margin: 0 auto;
+  color: #0f172a;
+}
+
+.report-toolbar {
+  display: flex;
+  justify-content: space-between;
+  gap: 18px;
+  align-items: center;
+  margin-bottom: 18px;
+  padding: 18px;
+  border: 1px solid rgba(6, 182, 212, 0.26);
+  border-radius: 14px;
+  background: rgba(10, 11, 16, 0.86);
+  color: #e5f6f8;
+}
+
+.report-toolbar h2 {
+  margin: 2px 0 4px;
+  color: #ffffff;
+  font-size: clamp(20px, 2.4vw, 30px);
+}
+
+.report-toolbar span,
+.report-eyebrow {
+  margin: 0;
+  color: #9ca3af;
+  font-size: 12px;
+}
+
+.report-eyebrow {
+  color: #06b6d4;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.report-actions {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+}
+
+.report-button {
+  min-height: 42px;
+  border: 1px solid transparent;
+  border-radius: 8px;
+  padding: 0 16px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  font-weight: 800;
+  font-size: 13px;
+  transition: transform 0.16s ease, opacity 0.16s ease, border-color 0.16s ease;
+}
+
+.report-button:hover {
+  transform: translateY(-1px);
+}
+
+.report-button:disabled {
+  opacity: 0.72;
+  transform: none;
+}
+
+.report-button-primary {
+  background: #06b6d4;
+  color: #041014;
+  box-shadow: 0 18px 38px rgba(6, 182, 212, 0.26);
+}
+
+.report-button-secondary {
+  background: transparent;
+  color: #d1d5db;
+  border-color: #26313a;
+}
+
+.report-spinner {
+  width: 16px;
+  height: 16px;
+  border: 2px solid rgba(4, 16, 20, 0.28);
+  border-top-color: #041014;
+  border-radius: 999px;
+  animation: report-spin 0.8s linear infinite;
+}
+
+@keyframes report-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.report-preview-wrap {
+  width: 100%;
+  overflow-x: auto;
+  padding: 6px 0 20px;
+}
+
+.medical-report {
+  width: min(100%, 920px);
+  min-width: 320px;
+  margin: 0 auto;
+  background: #ffffff;
+  color: #111827;
+  border-radius: 10px;
+  padding: clamp(18px, 3vw, 34px);
+  box-shadow: 0 24px 70px rgba(0, 0, 0, 0.22);
+  font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+}
+
+.medical-report-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 20px;
+  padding-bottom: 20px;
+  border-bottom: 3px solid #0e7490;
+}
+
+.report-logo {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.report-logo-mark {
+  width: 56px;
+  height: 56px;
+  display: grid;
+  place-items: center;
+  border-radius: 14px;
+  color: #ffffff;
+  background: linear-gradient(135deg, #0891b2, #16a34a);
+}
+
+.report-logo h1 {
+  margin: 0;
+  color: #0f172a;
+  font-size: 31px;
+  line-height: 1;
+}
+
+.report-logo p,
+.report-id-block span,
+.report-id-block small {
+  margin: 4px 0 0;
+  color: #64748b;
+  font-size: 12px;
+}
+
+.report-id-block {
+  text-align: right;
+}
+
+.report-id-block strong {
+  display: block;
+  margin-top: 4px;
+  color: #0e7490;
+  font-size: 16px;
+}
+
+.report-notice {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+  margin: 18px 0;
+  padding: 12px 14px;
+  border: 1px solid #bae6fd;
+  border-radius: 8px;
+  background: #f0f9ff;
+  color: #075985;
+  font-weight: 700;
+  font-size: 13px;
+}
+
+.report-grid {
+  display: grid;
+  gap: 14px;
+  margin-bottom: 14px;
+}
+
+.report-grid.two {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.verification-grid {
+  grid-template-columns: 220px 1fr;
+}
+
+.report-card {
+  border: 1px solid #dbe4ee;
+  border-radius: 8px;
+  background: #ffffff;
+  padding: 16px;
+}
+
+.report-card h3,
+.emergency-warning h3,
+.report-history h3 {
+  margin: 0 0 10px;
+  color: #0f172a;
+  font-size: 14px;
+  letter-spacing: 0.03em;
+  text-transform: uppercase;
+}
+
+.report-card p {
+  margin: 0;
+  color: #334155;
+  font-size: 13px;
+  line-height: 1.7;
+}
+
+.report-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 13px;
+}
+
+.report-table th,
+.report-table td {
+  padding: 8px 6px;
+  border-bottom: 1px solid #edf2f7;
+  text-align: left;
+}
+
+.report-table th {
+  width: 35%;
+  color: #64748b;
+  font-weight: 700;
+}
+
+.report-table td {
+  color: #111827;
+  font-weight: 700;
+}
+
+.severity-badge {
+  display: inline-flex;
+  align-items: center;
+  min-height: 34px;
+  border: 1px solid;
+  border-radius: 999px;
+  padding: 0 14px;
+  font-weight: 900;
+}
+
+.severity-score {
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+  margin: 14px 0 8px;
+}
+
+.severity-score strong {
+  font-size: 34px;
+  color: #0f172a;
+}
+
+.severity-score span {
+  color: #64748b;
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.symptom-box {
+  padding: 12px;
+  border-left: 4px solid #06b6d4;
+  background: #f8fafc;
+  border-radius: 6px;
+}
+
+.report-list {
+  margin: 0;
+  padding-left: 18px;
+  color: #334155;
+  font-size: 13px;
+  line-height: 1.75;
+}
+
+.medicine-note {
+  margin-top: 10px !important;
+  padding-top: 10px;
+  border-top: 1px dashed #cbd5e1;
+  color: #64748b !important;
+}
+
+.emergency-warning {
+  margin: 0 0 14px;
+  padding: 16px;
+  border: 2px solid #fca5a5;
+  border-radius: 8px;
+  background: #fef2f2;
+  color: #991b1b;
+}
+
+.emergency-warning p {
+  margin: 0;
+  font-size: 14px;
+  font-weight: 800;
+  line-height: 1.55;
+}
+
+.qr-card {
+  text-align: center;
+}
+
+.qr-card img,
+.qr-placeholder {
+  width: 108px;
+  height: 108px;
+  margin: 2px auto 8px;
+}
+
+.qr-placeholder {
+  border-radius: 8px;
+  background: repeating-linear-gradient(45deg, #e2e8f0 0 8px, #f8fafc 8px 16px);
+}
+
+.qr-card span,
+.signature-card span {
+  color: #64748b;
+  font-size: 11px;
+}
+
+.signature-card {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+}
+
+.signature-line {
+  margin: 24px 0 8px;
+  padding-top: 12px;
+  border-top: 1px solid #0f172a;
+  color: #0f172a;
+  font-family: "Brush Script MT", "Segoe Script", cursive;
+  font-size: 24px;
+}
+
+.report-footer {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 18px;
+  padding-top: 14px;
+  border-top: 2px solid #e5e7eb;
+  color: #475569;
+  font-size: 12px;
+  font-weight: 800;
+}
+
+.report-toast {
+  position: fixed;
+  right: 22px;
+  bottom: 22px;
+  z-index: 10000;
+  max-width: 360px;
+  border-radius: 10px;
+  padding: 12px 14px;
+  color: #ffffff;
+  font-weight: 800;
+  box-shadow: 0 18px 40px rgba(0, 0, 0, 0.28);
+}
+
+.report-toast-success {
+  background: #047857;
+}
+
+.report-toast-error {
+  background: #b42318;
+}
+
+.report-history {
+  margin-top: 2px;
+  padding: 14px;
+  border: 1px solid #1a1d24;
+  border-radius: 12px;
+  background: rgba(10, 11, 16, 0.86);
+  color: #d1d5db;
+}
+
+.report-history h3 {
+  color: #ffffff;
+}
+
+.report-history div {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 8px 0;
+  border-top: 1px solid #1a1d24;
+  font-size: 12px;
+}
+
+.report-history span {
+  color: #8a8f98;
+}
+
+@media (max-width: 760px) {
+  .report-toolbar,
+  .medical-report-header,
+  .report-history div {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .report-actions {
+    justify-content: stretch;
+  }
+
+  .report-button {
+    width: 100%;
+  }
+
+  .report-grid.two,
+  .verification-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .report-id-block {
+    text-align: left;
+  }
+}
+
+@media print {
+  body * {
+    visibility: hidden;
+  }
+
+  .medical-report,
+  .medical-report * {
+    visibility: visible;
+  }
+
+  .medical-report {
+    position: absolute;
+    left: 0;
+    top: 0;
+    width: 100%;
+    box-shadow: none;
+    border-radius: 0;
+  }
+}
