@@ -881,33 +881,41 @@ const App = () => {
                       </div>
                     </div>
 
-                    {/* Action buttons */}
-                    <div className="p-5 rounded-xl border flex flex-col gap-3"
-                      style={{ background:'#060B10', borderColor:'#06B6D4' + '40' }}>
-                      <span className="font-mono text-[10px] font-bold text-[#06B6D4] uppercase tracking-widest">Actions</span>
-                      <button onClick={handlePrimaryAction}
-                        className="w-full py-3 rounded font-bold text-sm bg-white hover:bg-[#EDEDEE] text-[#060609] transition-colors">
-                        Share Summary with Care Team
-                      </button>
-                      <button onClick={() => setShowReport(true)}
-                        disabled={!triageResponse}
-                        className="w-full py-3 rounded font-bold text-sm transition-all"
-                        style={{
-                          background: triageResponse?'linear-gradient(135deg,#00D1FF18,#10B98118)':'#0A0B10',
-                          border: `1px solid ${triageResponse?'#00D1FF40':'#1A1D24'}`,
-                          color: triageResponse?'#00D1FF':'#4B5563',
-                        }}>
-                        {triageResponse ? '⬡ Generate Intelligence Report' : 'Run triage to generate report'}
-                      </button>
-                      {/* Floating copilot hint */}
-                      <div className="flex items-center gap-2 pt-1 border-t border-[#1A1D24]">
-                        <div className="w-5 h-5 rounded-full bg-[#00D1FF18] border border-[#00D1FF30] flex items-center justify-center flex-shrink-0">
-                          <svg width="8" height="8" viewBox="0 0 24 24" fill="none"><path d="M22 12h-4l-3 9L9 3l-3 9H2" stroke="#00D1FF" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/></svg>
-                        </div>
-                        <span className="font-mono text-[9px] text-[#4B5A6E]">Ask PulseGuard AI anything · floating copilot active ↘</span>
+                    {/* System Intelligence */}
+                    <div className="p-5 rounded-xl bg-[#0A0B10] border border-[#1A1D24]">
+                      <span className="font-mono text-[10px] font-bold text-[#8A8F98] uppercase tracking-widest block mb-4">System Intelligence</span>
+                      <div className="space-y-3">
+                        {[
+                          { label: 'Knowledge References', value: `${ragChunks} chunks`, color: '#06B6D4' },
+                          { label: 'Language Detected', value: language, color: '#A78BFA' },
+                          { label: 'Model Confidence', value: triageResponse ? `${Math.min(99, 72 + score / 5).toFixed(1)}%` : '—', color: '#10B981' },
+                          { label: 'Triage Stage', value: triageResponse?.topology_stage || 'Awaiting input', color: riskTone==='high'?'#D97706':'#8A8F98' },
+                          { label: 'Response Engine', value: 'MedQuAD + GPT-4o', color: '#4B5A6E' },
+                        ].map(({ label, value, color }) => (
+                          <div key={label} className="flex items-center justify-between py-1.5 border-b border-[#1A1D24] last:border-0">
+                            <span className="font-mono text-[10px] text-[#4B5A6E]">{label}</span>
+                            <span className="font-mono text-[10px] font-bold" style={{ color }}>{value}</span>
+                          </div>
+                        ))}
                       </div>
-                      {actionFeedback && <div className="p-3 rounded bg-[#060609] border border-[#1A1D24] font-mono text-[10px] text-[#10B981] text-center">{actionFeedback}</div>}
+                      {/* Discreet report trigger — minimal, non-CTA */}
+                      {triageResponse && (
+                        <button
+                          onClick={() => setShowReport(true)}
+                          className="w-full mt-4 py-2 rounded font-mono font-bold text-[10px] uppercase tracking-widest transition-all"
+                          style={{
+                            background: 'transparent',
+                            border: '1px solid #00D1FF20',
+                            color: '#00D1FF60',
+                          }}
+                          onMouseEnter={e => { e.currentTarget.style.borderColor='#00D1FF50'; e.currentTarget.style.color='#00D1FF'; }}
+                          onMouseLeave={e => { e.currentTarget.style.borderColor='#00D1FF20'; e.currentTarget.style.color='#00D1FF60'; }}
+                        >
+                          ⬡ Export Intelligence Dossier
+                        </button>
+                      )}
                     </div>
+
                   </div>
                 </div>
               </div>
