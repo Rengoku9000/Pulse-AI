@@ -4,6 +4,7 @@ import CinematicIntro from "./CinematicIntro";
 import AmbientBackground from "./AmbientBackground";
 import VoiceIntakeModule from "./VoiceIntakeModule";
 import CopilotChat from "./CopilotChat";
+import ClinicalReport from "./ClinicalReport";
 
 const Icons = { Activity, Clock };
 const API_URL = import.meta.env.VITE_API_URL || "/api";
@@ -55,6 +56,7 @@ const App = () => {
   // Enterprise Copilot State
   const [chatInput, setChatInput] = React.useState('');
   const [aiThinking, setAiThinking] = React.useState(false);
+  const [showReport, setShowReport] = React.useState(false);
   
   const [chatMessages, setChatMessages] = React.useState([
     { id: 1, sender: 'ai', text: '⚡ PulseGuard Clinical Intelligence online. Ready to synthesize telemetry buffers.' }
@@ -655,6 +657,19 @@ const App = () => {
                     <button onClick={handlePrimaryAction} className="w-full py-4 rounded bg-white hover:bg-[#EDEDEE] text-[#060609] font-bold text-base transition-colors shadow-sm tracking-tight">
                       Dispatch Duty Physician →
                     </button>
+                    <button
+                      onClick={() => setShowReport(true)}
+                      className="w-full py-3 rounded font-bold text-sm transition-all tracking-tight"
+                      style={{
+                        background: triageResponse ? 'linear-gradient(135deg,#00D1FF18,#10B98118)' : '#0A0B10',
+                        border: `1px solid ${triageResponse ? '#00D1FF40' : '#1A1D24'}`,
+                        color: triageResponse ? '#00D1FF' : '#4B5563',
+                        cursor: triageResponse ? 'pointer' : 'default',
+                      }}
+                      disabled={!triageResponse}
+                    >
+                      {triageResponse ? '⬡ Generate Intelligence Report' : 'Run triage to generate report'}
+                    </button>
                     {actionFeedback && <div className="p-4 rounded bg-[#0A0B10] border border-[#1A1D24] font-mono text-[11px] text-[#10B981] text-center">{actionFeedback}</div>}
                   </div>
                 </div>
@@ -755,8 +770,19 @@ const App = () => {
           </footer>
         </div>
       </div>
+
+      {/* ── CLINICAL INTELLIGENCE REPORT OVERLAY ── */}
+      {showReport && (
+        <ClinicalReport
+          triageResponse={triageResponse}
+          patientMessage={patientMessage}
+          metrics={metrics}
+          onClose={() => setShowReport(false)}
+        />
+      )}
     </div>
   );
 };
 
 export default App;
+
