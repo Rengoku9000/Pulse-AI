@@ -31,15 +31,32 @@ flowchart LR
   U["User"] --> FE["React Health Guard command center"]
   FE --> NGINX["Frontend nginx /api proxy"]
   NGINX --> BE["FastAPI triage backend"]
+  BE --> NLP["NLP Layer: symptom extraction, language handling, prompt preparation"]
+  NLP --> ML["ML Layer: OpenAI LLM guidance, embeddings, semantic understanding"]
+  ML --> Safety["Safety Layer: emergency scoring, disclaimers, fallback responses"]
+  Safety --> BE
   BE --> M["MongoDB triage events"]
   BE --> VS["FAISS vector service"]
-  VS --> OAIEmbed["OpenAI embeddings"]
-  BE --> OAIChat["OpenAI chat API"]
+  VS --> RAG["RAG Layer: medical document retrieval"]
+  RAG --> OAIEmbed["OpenAI embeddings"]
+  ML --> OAIChat["OpenAI chat API"]
   BE --> PM["Prometheus metrics"]
   VS --> PM
   PM --> G["Grafana dashboards"]
   Pods["Kubernetes pod logs"] --> PT["Promtail"] --> L["Loki"] --> G
 ```
+
+Named layers in this project:
+
+- Frontend Layer: React Health Guard command center.
+- Backend API Layer: FastAPI `/chat`, `/health`, `/status`, and `/metrics`.
+- NLP Layer: symptom extraction, user text understanding, language handling, and prompt preparation.
+- ML Layer: OpenAI LLM responses, OpenAI embeddings, semantic similarity, and AI-assisted triage guidance.
+- RAG Layer: medical PDF chunking, FAISS vector search, and context retrieval.
+- Safety Layer: rule-based emergency scoring, disclaimers, escalation logic, and safe fallback responses.
+- Data Layer: MongoDB triage events and FAISS vector index storage.
+- Infrastructure Layer: Docker, Kubernetes Kind, services, deployments, secrets, and scripts.
+- Monitoring Layer: Prometheus, Grafana, Loki, and Promtail.
 
 ## Folder Structure
 

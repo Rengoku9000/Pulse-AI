@@ -6,15 +6,15 @@ import * as React from "react";
 const API_URL = import.meta.env.VITE_API_URL || "/api";
 
 const THINKING_STEPS = [
-  "Analyzing symptom patterns…",
-  "Retrieving clinical context…",
-  "Checking escalation indicators…",
-  "Generating triage synthesis…",
+  "Reading symptom details...",
+  "Checking trusted medical context...",
+  "Looking for urgent warning signs...",
+  "Preparing safe guidance...",
 ];
 
 const SYSTEM_PROMPT_HINT =
-  "You are PulseGuard AI — a clinical intelligence copilot. You help triage patients, " +
-  "assess symptoms, ask relevant follow-up questions, and support healthcare staff. " +
+  "You are PulseGuard AI, a patient-friendly healthcare guidance assistant. You help people describe symptoms, " +
+  "understand possible urgency, ask relevant follow-up questions, and prepare safe next steps. " +
   "You NEVER diagnose. You use probabilistic language. You escalate appropriately.";
 
 /* ─────────────────────────────────────────────
@@ -127,7 +127,7 @@ function UserMessage({ msg }) {
           {msg.time || ts()}
         </span>
         <span style={{ fontFamily: "monospace", fontSize: 9, color: "#8A8F98", fontWeight: 700, letterSpacing: "0.1em" }}>
-          OPERATOR
+          YOU
         </span>
       </div>
       <div style={{
@@ -167,7 +167,7 @@ export default function CopilotChat({ triageResponse, patientMessage }) {
   const [messages, setMessages] = React.useState([
     {
       id: 1, sender: "ai", time: ts(),
-      text: "⚡ PulseGuard Clinical Intelligence online.\n\nI can analyze symptoms, assess risk, ask follow-up questions, and support triage decisions in real time.\n\nDescribe the patient's condition or ask me anything.",
+      text: "PulseGuard AI is here to help.\n\nTell me what symptoms you are having, how long they have been happening, and anything that feels worrying.\n\nI will not diagnose, but I can suggest safe next steps.",
     }
   ]);
   const [input, setInput]           = React.useState("");
@@ -296,8 +296,8 @@ export default function CopilotChat({ triageResponse, patientMessage }) {
       if (err.name === "AbortError") return;
       // Graceful fallback — show error as AI message
       const fallback = triageResponse
-        ? `[OBSERVATION]\nCopilot is operating in offline mode.\n\n[RISK SIGNALS]\n${triageResponse.clinical_summary}\n\n[RECOMMENDATION]\n${triageResponse.emergency_recommendation}\n\n[DISCLAIMER]\nConnect the backend to enable live AI responses.`
-        : "[OBSERVATION]\nUnable to reach the backend copilot endpoint.\n\n[RECOMMENDATION]\nEnsure the PulseGuard backend is running and VITE_API_URL is set correctly.\n\n[DISCLAIMER]\nThis system requires a live backend connection for AI responses.";
+        ? `[OBSERVATION]\nThe live chat assistant is offline right now.\n\n[RISK SIGNALS]\n${triageResponse.clinical_summary}\n\n[RECOMMENDATION]\n${triageResponse.emergency_recommendation}\n\n[DISCLAIMER]\nIf symptoms feel severe or urgent, please seek medical help immediately.`
+        : "[OBSERVATION]\nUnable to reach the live assistant right now.\n\n[RECOMMENDATION]\nPlease try again in a moment. If symptoms feel urgent, consult a healthcare professional or emergency service.\n\n[DISCLAIMER]\nThis tool provides guidance only and does not give a diagnosis.";
       setMessages(prev => {
         const hasPlaceholder = prev.some(m => m.id === aiId);
         const base = hasPlaceholder ? prev.filter(m => m.id !== aiId) : prev;
@@ -319,9 +319,9 @@ export default function CopilotChat({ triageResponse, patientMessage }) {
   const handleQuickAction = (text) => sendMessage(text);
 
   const QUICK_ACTIONS = [
-    "What are the risk signals?",
-    "Should this patient be escalated?",
-    "What follow-up questions should I ask?",
+    "What should I do next?",
+    "Do these symptoms sound urgent?",
+    "What details should I mention?",
   ];
 
   /* ── RENDER ─────────────────────────────────── */
@@ -350,10 +350,10 @@ export default function CopilotChat({ triageResponse, patientMessage }) {
             boxShadow: "0 0 6px #10B98180", animation: "cp-dot 2s ease-in-out infinite",
           }} />
           <span style={{ fontFamily: "monospace", fontSize: 11, fontWeight: 700, color: "#fff", letterSpacing: "0.08em", textTransform: "uppercase" }}>
-            Intelligence Copilot
+            Patient Guidance Assistant
           </span>
         </div>
-        <span style={{ fontFamily: "monospace", fontSize: 9, color: "#10B981" }}>● Secure Channel</span>
+        <span style={{ fontFamily: "monospace", fontSize: 9, color: "#10B981" }}>Private session</span>
       </div>
 
       {/* Messages */}
@@ -396,7 +396,7 @@ export default function CopilotChat({ triageResponse, patientMessage }) {
           value={input}
           onChange={e => setInput(e.target.value)}
           onKeyDown={handleKeyDown}
-          placeholder="Ask about symptoms, risk, escalation…"
+          placeholder="Ask about symptoms, next steps, or warning signs..."
           disabled={streaming}
           style={{
             flex: 1, background: "transparent", border: "none", outline: "none",
