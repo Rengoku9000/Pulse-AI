@@ -6,6 +6,7 @@ import VoiceIntakeModule from "./VoiceIntakeModule";
 import CopilotChat from "./CopilotChat";
 import ClinicalReport from "./ClinicalReport";
 import MedicalReportPreview from "./MedicalReportPreview";
+import FloatingCopilot from "./FloatingCopilot";
 
 const Icons = { Activity, Clock };
 const API_URL = import.meta.env.VITE_API_URL || "/api";
@@ -924,9 +925,14 @@ const App = () => {
           </div>
         </div>
       )}
-
+      {/* ── PERSISTENT FLOATING AI COPILOT ── */}
+      <FloatingCopilot
+        triageResponse={triageResponse}
+        patientMessage={patientMessage}
+      />
 
     </div>
+
   );
 };
 
