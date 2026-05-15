@@ -5,6 +5,7 @@ import AmbientBackground from "./AmbientBackground";
 import VoiceIntakeModule from "./VoiceIntakeModule";
 import CopilotChat from "./CopilotChat";
 import ClinicalReport from "./ClinicalReport";
+import MedicalReportPreview from "./MedicalReportPreview";
 
 const Icons = { Activity, Clock };
 const API_URL = import.meta.env.VITE_API_URL || "/api";
@@ -57,6 +58,11 @@ const App = () => {
   const [chatInput, setChatInput] = React.useState('');
   const [aiThinking, setAiThinking] = React.useState(false);
   const [showReport, setShowReport] = React.useState(false);
+  const [showMedReport, setShowMedReport] = React.useState(false);
+  // AI Processing overlay — shown during backend triage call
+  const [triageProcessing, setTriageProcessing] = React.useState(false);
+  const [processStep, setProcessStep] = React.useState(0);
+  const processStepRef = React.useRef(null);
   
   const [chatMessages, setChatMessages] = React.useState([
     { id: 1, sender: 'ai', text: 'PulseGuard AI is ready. Tell me what you are feeling, and I will help guide the next safe step.' }
@@ -197,6 +203,14 @@ const App = () => {
   const submitTriage = async () => {
     setTriageLoading(true);
     setTriageError("");
+    // Show AI processing overlay immediately — never show black screen
+    setTriageProcessing(true);
+    setProcessStep(0);
+    processStepRef.current = setInterval(() =>
+      setProcessStep(s => (s < 3 ? s + 1 : s)), 900
+    );
+    // Start scrolling toward Chapter 3 so the user sees the AI analysis flow
+    scrollToChapterOffset(0.35);
     try {
       const res = await fetch(`${API_URL}/chat`, {
         method: "POST",
@@ -211,13 +225,25 @@ const App = () => {
         { id: Date.now(), time: timeStr, text: `Symptom review completed: ${data.risk_level}`, type: data.emergency_score >= 70 ? 'warn' : 'success' },
         ...f,
       ]);
-      scrollToChapterOffset(0.98);
+      // After response: briefly hold on Chapter 3 (AI reasoning), then advance to Chapter 6
+      setTimeout(() => {
+        setTriageProcessing(false);
+        clearInterval(processStepRef.current);
+        scrollToChapterOffset(0.98);
+      }, 1400);
     } catch (err) {
       setTriageError("Unable to review symptoms right now. Please try again, or consult a healthcare professional if symptoms feel urgent.");
+      setTriageProcessing(false);
+      clearInterval(processStepRef.current);
+      // Don't leave user on black screen — scroll back to intake
+      scrollToChapterOffset(0.05);
     } finally {
       setTriageLoading(false);
     }
   };
+
+  // Cleanup interval on unmount
+  React.useEffect(() => () => clearInterval(processStepRef.current), []);
 
   // Execute remediation action with luxury sinusoidal easing traversal
   const handlePrimaryAction = () => {
@@ -737,12 +763,7 @@ const App = () => {
                   </div>
                 </div>
 
-                {triageResponse && (
-                  <MedicalReportPreview
-                    triageResponse={triageResponse}
-                    patientMessage={patientMessage}
-                  />
-                )}
+                {/* Remove MedicalReportPreview inline embed — replaced by ClinicalReport overlay button */}
               </div>
             )}
           </main>
@@ -787,6 +808,108 @@ const App = () => {
           onClose={() => setShowReport(false)}
         />
       )}
+
+      {/* ── AI PROCESSING OVERLAY — prevents black screen during triage call ── */}
+      {triageProcessing && (
+        <div style={{
+          position: 'fixed', inset: 0, zIndex: 800,
+          background: 'rgba(7,11,17,0.92)', backdropFilter: 'blur(12px)',
+          display: 'flex', alignItems: 'center', justifyContent: 'center',
+          animation: 'fadeIn 0.3s ease',
+        }}>
+          <style>{`
+            @keyframes fadeIn { from{opacity:0} to{opacity:1} }
+            @keyframes scan { 0%{transform:translateY(-100%)} 100%{transform:translateY(100vh)} }
+            @keyframes pulse-ring { 0%,100%{opacity:0.2;transform:scale(1)} 50%{opacity:0.6;transform:scale(1.12)} }
+          `}</style>
+          {/* Scan line */}
+          <div style={{
+            position: 'absolute', inset: 0, overflow: 'hidden', pointerEvents: 'none',
+          }}>
+            <div style={{
+              position: 'absolute', left: 0, right: 0, height: 1,
+              background: 'linear-gradient(90deg,transparent,#00D1FF60,transparent)',
+              animation: 'scan 2.8s linear infinite',
+            }} />
+          </div>
+
+          <div style={{ textAlign: 'center', maxWidth: 420, padding: '0 24px' }}>
+            {/* Pulsing logo ring */}
+            <div style={{ position: 'relative', width: 72, height: 72, margin: '0 auto 28px' }}>
+              <div style={{
+                position: 'absolute', inset: -12, borderRadius: '50%',
+                border: '1px solid #00D1FF30',
+                animation: 'pulse-ring 2s ease-in-out infinite',
+              }} />
+              <div style={{
+                width: 72, height: 72, borderRadius: '50%',
+                background: 'linear-gradient(135deg,#00D1FF15,#10B98115)',
+                border: '1px solid #00D1FF40',
+                display: 'flex', alignItems: 'center', justifyContent: 'center',
+              }}>
+                <svg width="28" height="28" viewBox="0 0 24 24" fill="none">
+                  <path d="M22 12h-4l-3 9L9 3l-3 9H2" stroke="#00D1FF" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                </svg>
+              </div>
+            </div>
+
+            <div style={{ fontFamily: 'monospace', fontSize: 10, color: '#00D1FF',
+              letterSpacing: '0.2em', textTransform: 'uppercase', marginBottom: 8 }}>
+              PulseGuard AI · Clinical Analysis
+            </div>
+            <div style={{ fontSize: 22, fontWeight: 700, color: '#fff', marginBottom: 28, letterSpacing: '-0.02em' }}>
+              Analyzing Your Symptoms
+            </div>
+
+            {/* Steps */}
+            <div style={{ textAlign: 'left', marginBottom: 24 }}>
+              {[
+                'Extracting symptom patterns…',
+                'Retrieving medical context…',
+                'Assessing escalation risk…',
+                'Generating care guidance…',
+              ].map((step, i) => (
+                <div key={i} style={{
+                  display: 'flex', alignItems: 'center', gap: 10, padding: '6px 0',
+                  opacity: i <= processStep ? 1 : 0.25,
+                  transition: 'opacity 0.5s ease',
+                  color: i < processStep ? '#10B981' : i === processStep ? '#00D1FF' : '#4B5A6E',
+                  fontFamily: 'monospace', fontSize: 12,
+                }}>
+                  <div style={{ width: 16, height: 16, borderRadius: '50%', flexShrink: 0,
+                    background: i < processStep ? '#10B981' : i === processStep ? '#00D1FF20' : 'transparent',
+                    border: `1px solid ${i < processStep ? '#10B981' : i === processStep ? '#00D1FF' : '#1C2333'}`,
+                    display: 'flex', alignItems: 'center', justifyContent: 'center',
+                  }}>
+                    {i < processStep && <span style={{ fontSize: 8, color: '#060609' }}>✓</span>}
+                    {i === processStep && <span style={{ width: 6, height: 6, borderRadius: '50%', background: '#00D1FF', display: 'block' }} />}
+                  </div>
+                  <span>{step}</span>
+                  {i === processStep && (
+                    <span style={{ marginLeft: 'auto', fontSize: 9, color: '#00D1FF', letterSpacing: '0.1em' }}>
+                      ACTIVE
+                    </span>
+                  )}
+                </div>
+              ))}
+            </div>
+
+            {/* Progress bar */}
+            <div style={{ height: 2, background: '#1C2333', borderRadius: 1, overflow: 'hidden' }}>
+              <div style={{
+                height: '100%', borderRadius: 1,
+                background: 'linear-gradient(90deg,#00D1FF,#10B981)',
+                width: `${(processStep / 3) * 100}%`,
+                transition: 'width 0.8s cubic-bezier(0.16,1,0.3,1)',
+              }} />
+            </div>
+            <div style={{ fontFamily: 'monospace', fontSize: 9, color: '#4B5A6E', marginTop: 10 }}>
+              Safe · Medically grounded · AI-powered
+            </div>
+          </div>
+        </div>
+      )}
+
     </div>
   );
 };
